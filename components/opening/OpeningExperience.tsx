@@ -62,7 +62,7 @@ export function OpeningExperience({ onFinished }: Props) {
               />
             ) : (
               <View style={styles.webFallback}>
-                <Text style={styles.webBrand}>MONDO</Text>
+                <Text style={styles.webBrand}>KOTOI</Text>
                 <Text style={styles.webTag}>問いが増える</Text>
               </View>
             )}

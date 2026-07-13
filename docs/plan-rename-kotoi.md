@@ -1,7 +1,7 @@
 # リネーム実行計画：MONDO → KOTOI
 
 最終更新: 2026-07-13  
-ステータス: **計画確定（実装待ち）**  
+ステータス: **Phase 1 完了 → Phase 2（Dashboard）待ち**  
 アイデンティティ正本: [`cursor-handoff/09_rename-mondo-to-kotoi.md`](../cursor-handoff/09_rename-mondo-to-kotoi.md)
 
 ---
@@ -22,10 +22,11 @@
 | 項目 | After |
 |---|---|
 | 表示名 | `KOTOI` |
-| Bundle / package | `app.kotoi` |
+| Bundle / package | `app.kotoi`（所有ドメイン `kotoi.app` の reverse-DNS） |
 | scheme | `kotoi` → `kotoi://` |
 | Expo slug | `kotoi` |
-| WM / 公開ドメイン | `kotoi.art` |
+| WM / 公開ドメイン | `kotoi.art`（所有済み） |
+| 技術ドメイン | `kotoi.app`（所有済み・Bundle の由来） |
 | タグライン | 問いが増える（据え置き） |
 
 ---
@@ -46,11 +47,25 @@ Phase 4  後続（共有 Web / UL / LP / IAP）— リネームと分離
 
 ## 2. Phase 0 — 保険
 
-1. 現状をリモートに push（ブランチ名は任意。タグ `pre-rebrand` 推奨）
-2. 作業ブランチ例: `rebrand/kotoi`
-3. **やらない:** 新 GitHub レポを作ってファイルコピー
+1. ✅ 現状をコミット（`cb8b9fc`）＋タグ `pre-rebrand`
+2. ✅ 作業ブランチ `rebrand/kotoi`
+3. ⏳ **リモート push は未**（`git remote` 未設定・`gh` 未導入）。GitHub レポ作成後に `main` / タグ / `rebrand/kotoi` を push
+4. **やらない:** 新 GitHub レポを作ってファイルコピー
 
 ---
+
+## 2b. Phase 1 進捗（2026-07-13）
+
+| 項目 | 状態 |
+|---|---|
+| `app.json` name/slug/scheme/bundle/package | ✅ |
+| WM `kotoi.art` / UA | ✅ |
+| UI・オープニング・paywall・storage keys | ✅ |
+| `package.json` / config.toml / README Auth 記述 | ✅ |
+| mocks / 残 docs（ai-costs 等）の MONDO 表記 | ✅ |
+| Supabase Redirect / Apple Client / ASC 新規 | ⏳ Phase 2（**次はここ**） |
+| 実機での表示確認 | ✅（ユーザー確認） |
+| Bundle = `app.kotoi`（`kotoi.app` reverse-DNS） | ✅ 確定・変更しない |
 
 ## 3. Phase 1 — リポ内（置換順）
 

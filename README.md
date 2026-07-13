@@ -1,4 +1,4 @@
-# MONDO
+# KOTOI
 
 雑多に放り込むと、AIが分類し・要約し、そして「次の問い」を返す個人用ノートアプリ。
 
@@ -71,7 +71,7 @@ supabase db push   # user_settings / push_tokens / appearance
 Supabase Dashboard → **Authentication** → **Email Templates** → **Magic Link**:
 
 ```html
-<h2>MONDO ログインコード</h2>
+<h2>KOTOI ログインコード</h2>
 <p>アプリにこのコードを入力してください：</p>
 <p><strong>{{ .Token }}</strong></p>
 ```
@@ -80,9 +80,9 @@ Supabase Dashboard → **Authentication** → **Email Templates** → **Magic Li
 
 Dashboard → **Authentication** → **Providers**:
 
-1. **Apple** を有効化。Client IDs に iOS Bundle ID `app.mondo.notes` を追加（ネイティブ Sign in with Apple 用）
+1. **Apple** を有効化。Client IDs に iOS Bundle ID `app.kotoi` を追加（ネイティブ Sign in with Apple 用）
 2. **Google** を有効化。Google Cloud の OAuth **Web** クライアント ID / Secret を登録
-3. **URL Configuration** の Redirect URLs に `mondo://auth/callback` を追加
+3. **URL Configuration** の Redirect URLs に `kotoi://auth/callback` を追加
 4. 可能なら確認済みメールの **Automatic linking** をオン（二重アカウント防止）
 
 詳細: [`docs/plan-auth.md`](./docs/plan-auth.md)
@@ -99,7 +99,7 @@ npm start
 
 ## TestFlight（iOS）
 
-Apple Developer Program 加入済みを前提とします。バンドル ID は `app.mondo.notes`（`app.json` で変更可）。
+Apple Developer Program 加入済みを前提とします。バンドル ID は `app.kotoi`（`app.json` で変更可）。
 
 ### 1. EAS CLI
 
@@ -142,7 +142,7 @@ npm run submit:ios
 # または: eas submit --platform ios --latest --profile production
 ```
 
-App Store Connect にアプリ `MONDO`（bundle: `app.mondo.notes`）が無ければ、初回 submit 時に作成されます。
+App Store Connect にアプリ `KOTOI`（bundle: `app.kotoi`）が無ければ、初回 submit 時に作成されます。
 
 ### 5. TestFlight でテスト
 

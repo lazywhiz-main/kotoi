@@ -62,7 +62,7 @@ const LIMITATIONS: Limitation[] = [
     verdict: 'hard',
   },
   {
-    title: 'MONDO 字間・日本語ラベル',
+    title: 'KOTOI 字間・日本語ラベル',
     mock: 'measureText + drawSpaced',
     skia: 'Text + 手動字間。フォントは matchFont',
     verdict: 'partial',

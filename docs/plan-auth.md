@@ -22,9 +22,9 @@
 
 ### まだ手動（Supabase / Apple / Google Console）
 
-1. Auth → Providers → **Apple** 有効（Bundle ID `app.mondo.notes` を Client IDs に）
+1. Auth → Providers → **Apple** 有効（Bundle ID `app.kotoi` を Client IDs に）
 2. Auth → Providers → **Google** 有効（Web Client ID / Secret）
-3. Auth → URL Configuration → Redirect URLs に `mondo://auth/callback`（および EAS / Expo の redirect）
+3. Auth → URL Configuration → Redirect URLs に `kotoi://auth/callback`（および EAS / Expo の redirect）
 4. Auth → 可能なら **Automatic linking**（確認済みメール一致）をオン
 5. 再ビルド（`usesAppleSignIn` / `expo-apple-authentication` のため）
 
@@ -179,7 +179,7 @@ auth.users          ← アプリが RLS で見る「1人」
 
 ```ts
 type LastAuthMethod = 'apple' | 'google' | 'email_otp' | 'email_password';
-// mondo_last_auth_method
+// kotoi_last_auth_method
 ```
 
 サーバー必須ではない（個人アプリ・1端末主利用）。  
@@ -261,7 +261,7 @@ type LastAuthMethod = 'apple' | 'google' | 'email_otp' | 'email_password';
 
 ### 9.2 頭の中のモデル
 
-> **同じメールアドレス＝同じ MONDO の部屋。**  
+> **同じメールアドレス＝同じ KOTOI の部屋。**  
 > 入り方は「確認コード」でも「パスワード」でもよい。どっちで入っても中身は同じ。
 
 | 手段 | 向いているとき |

@@ -88,7 +88,7 @@ async function fetchYouTubeOembed(url: string): Promise<LinkPreview | null> {
 async function fetchOpenGraph(url: string): Promise<LinkPreview> {
   const res = await fetch(url, {
     headers: {
-      'User-Agent': 'MONDO/1.0 (+https://mondo.app; link-preview)',
+      'User-Agent': 'KOTOI/1.0 (+https://kotoi.art; link-preview)',
       Accept: 'text/html,application/xhtml+xml',
     },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),

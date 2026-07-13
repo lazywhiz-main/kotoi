@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const OPENING_COMPLETED_KEY = 'mondo_opening_completed';
+const OPENING_COMPLETED_KEY = 'kotoi_opening_completed';
 
 export async function isOpeningCompleted(): Promise<boolean> {
   const value = await AsyncStorage.getItem(OPENING_COMPLETED_KEY);

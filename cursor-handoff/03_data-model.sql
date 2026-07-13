@@ -1,5 +1,5 @@
 -- ============================================================
--- MONDO — Supabase schema (migration 0001_init)
+-- KOTOI — Supabase schema (migration 0001_init)
 -- Postgres 15 / Supabase. Apply as: supabase/migrations/0001_init.sql
 -- 単一ユーザー前提だが、全行に user_id を持たせRLSで保護する。
 -- ============================================================

@@ -68,8 +68,8 @@ export default function PaywallScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.brand}>MONDO</Text>
-        <Text style={styles.title}>続きは、MONDOと一緒に</Text>
+        <Text style={styles.brand}>KOTOI</Text>
+        <Text style={styles.title}>続きは、KOTOIと一緒に</Text>
         <Text style={styles.lead}>{lead}</Text>
         <Text style={styles.frame}>月に、本1冊分。</Text>
 

@@ -1,4 +1,4 @@
-// MONDO design tokens — light: mock_thread / dark: mock_dark_app_v1
+// KOTOI design tokens — light: mock_thread / dark: mock_dark_app_v1
 
 export type AppearancePreference = 'system' | 'light' | 'dark';
 export type ColorSchemeName = 'light' | 'dark';

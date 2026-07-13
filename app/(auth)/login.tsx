@@ -113,7 +113,7 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.hero}>
-            <Text style={styles.brand}>MONDO</Text>
+            <Text style={styles.brand}>KOTOI</Text>
             <Text style={styles.tagline}>問いが増える</Text>
             <View style={styles.hairline} />
           </View>

@@ -16,7 +16,7 @@ import { track } from '@/lib/analytics';
 export const INSTAGRAM_FEED_SIZE = { width: 1080, height: 1350 } as const;
 
 const PAPER_BG = '#f6f4ee';
-const WATERMARK_TEXT = 'mondo.app';
+const WATERMARK_TEXT = 'kotoi.art';
 
 type ComposeOptions = {
   /** デフォルト true。SEAM: 設定の「ウォーターマークをオフ」と接続 */

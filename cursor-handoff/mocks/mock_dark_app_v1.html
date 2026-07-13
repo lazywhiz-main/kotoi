@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MONDO — ダークモード アプリモック v1</title>
+<title>KOTOI — ダークモード アプリモック v1</title>
 <style>
   :root{
     --bg:#100f0d;--card:#1c1815;--card2:#221d18;--line:#2c2620;--line2:#3a342c;
@@ -109,7 +109,7 @@
 </head>
 <body>
   <div class="head">
-    <h1>MONDO — ダークモード アプリモック</h1>
+    <h1>KOTOI — ダークモード アプリモック</h1>
     <p>オープニングの世界観をアプリ本体へ延長。上で体験①（スレッド）と②（溜まった後）を切り替え。①はルート切替＋意図ボタン、②は下タブ＋問いの地図が動きます。</p>
     <div class="seg" id="appseg">
       <button data-v="thread" class="on">体験① スレッド</button>
@@ -168,7 +168,7 @@ const CANNED={
 let curRoot='text', mode='research', seed=[];
 function itemHTML(it){
   let tag=it.tag?`<span class="qtag ${it.tag[0]}">${it.tag[1]}</span>`:'';
-  let who=it.cls==='you'?'あなた':(it.cls==='work'?'エージェント':(it.who||'MONDO'));
+  let who=it.cls==='you'?'あなた':(it.cls==='work'?'エージェント':(it.who||'KOTOI'));
   let newq=it.newq?`<div class="newq"><div class="lead">↳ ここから生えた新しい問い</div><span class="qtag ${it.newq.t[0]}">${it.newq.t[1]}</span> ${it.newq.q}</div>`:'';
   let acts=it.actions?`<div class="rowbtns"><button onclick="quick('research')">調べる</button><button onclick="quick('dig')">深掘り</button></div>`:'';
   return `<div class="item ${it.cls}"><div class="who">${tag}<span class="n">${who}</span></div><div class="card2">${it.body}${newq}${acts}</div></div>`;
@@ -282,7 +282,7 @@ const ACCVIEWS={shelf,quest,review};
 function buildAcc(){
   filter='all';
   stage.innerHTML=`
-    <div class="brand"><span class="logo">MONDO</span><span class="sub">問いが増える</span></div>
+    <div class="brand"><span class="logo">KOTOI</span><span class="sub">問いが増える</span></div>
     <div class="body" id="abody"></div>
     <div class="tabbar" id="tabbar">
       <button data-t="shelf" class="on"><i>&#9776;</i>問いの棚</button>

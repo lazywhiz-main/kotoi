@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MONDO — オープニング v2（デザイン強化）</title>
+<title>KOTOI — オープニング v2（デザイン強化）</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;background:#e9e6de;color:#26251f;
@@ -24,7 +24,7 @@
 </head>
 <body>
   <div class="head">
-    <h1>MONDO — オープニング v2</h1>
+    <h1>KOTOI — オープニング v2</h1>
     <p>有機的な枝・飛沫・屈折波紋・粒状感を追加。テーマ（深い/淡い水面）と速度を切り替えて質感を確認できます。</p>
   </div>
   <div class="phone"><div class="scr"><div class="notch"></div><canvas id="c"></canvas></div></div>
@@ -143,7 +143,7 @@ function wordmark(t){ const p=easeOut(clamp((t-T.wordStart)/T.wordDur,0,1)); if(
   const y=cy - cap*(cy-72); const size=(27-cap*12)*settle; const al=Math.min(p,1);
   ctx.save(); ctx.textAlign='center'; ctx.shadowColor=rgba(TH.glow,0.28*al); ctx.shadowBlur=20;
   ctx.fillStyle=rgba(TH.word,al); ctx.font='700 '+size+'px -apple-system,"Hiragino Sans",sans-serif';
-  drawSpaced('MONDO',cx,y,size*0.16*al); ctx.restore();
+  drawSpaced('KOTOI',cx,y,size*0.16*al); ctx.restore();
   // hairline
   const hw=(1-cap)*46*p; if(hw>1){ ctx.strokeStyle=rgba(TH.tag,0.4*al); ctx.lineWidth=0.6;
     ctx.beginPath(); ctx.moveTo(cx-hw,y+14); ctx.lineTo(cx+hw,y+14); ctx.stroke(); }

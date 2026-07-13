@@ -10,7 +10,7 @@ export type TutorialSceneId =
   | 'exploreDone'
   | 'reviewReady';
 
-const keyFor = (id: TutorialSceneId) => `mondo_tutorial_seen_${id}`;
+const keyFor = (id: TutorialSceneId) => `kotoi_tutorial_seen_${id}`;
 
 export async function isTutorialSeen(id: TutorialSceneId): Promise<boolean> {
   const value = await AsyncStorage.getItem(keyFor(id));
@@ -25,7 +25,7 @@ export async function clearTutorialSeen(id: TutorialSceneId): Promise<void> {
   await AsyncStorage.removeItem(keyFor(id));
 }
 
-const FIRST_EXPLORATION_ASSIGN_KEY = 'mondo_exploration_first_assign_pressed';
+const FIRST_EXPLORATION_ASSIGN_KEY = 'kotoi_exploration_first_assign_pressed';
 
 export async function clearAllTutorials(): Promise<void> {
   const ids: TutorialSceneId[] = [

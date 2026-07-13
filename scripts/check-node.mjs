@@ -6,7 +6,7 @@ const ok =
 
 if (!ok) {
   console.error('');
-  console.error('MONDO requires Node.js >= 20.19.4 (Expo 57).');
+  console.error('KOTOI requires Node.js >= 20.19.4 (Expo 57).');
   console.error(`Current: v${process.versions.node}`);
   console.error('');
   console.error('Fix:');

@@ -400,7 +400,7 @@ function WordmarkLayer({
     <Group transform={[{ translateX: cx }, { translateY: y }, { scale }, { translateX: -cx }, { translateY: -y }]}>
       {/* モックの shadowBlur 相当 — BlurMask は文字が潰れるためレイヤー重ね */}
       <SpacedText
-        text="MONDO"
+        text="KOTOI"
         x={cx}
         y={y + 1}
         spacing={spacing + 1.5}
@@ -408,7 +408,7 @@ function WordmarkLayer({
         font={activeWordFont}
       />
       <SpacedText
-        text="MONDO"
+        text="KOTOI"
         x={cx}
         y={y}
         spacing={spacing}

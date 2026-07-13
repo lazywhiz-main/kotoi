@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type AuthMethod = 'apple' | 'google' | 'email_otp' | 'email_password';
 
-const KEY = 'mondo_last_auth_method';
+const KEY = 'kotoi_last_auth_method';
 
 export const AUTH_METHOD_LABEL: Record<AuthMethod, string> = {
   apple: 'Apple',

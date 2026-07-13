@@ -12,7 +12,7 @@ import {
 import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 
-const APPEARANCE_STORAGE_KEY = 'mondo_appearance';
+const APPEARANCE_STORAGE_KEY = 'kotoi_appearance';
 
 type ThemeContextValue = {
   preference: AppearancePreference;

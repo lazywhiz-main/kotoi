@@ -1,4 +1,4 @@
-// MONDO — shared types (mirror of 03_data-model.sql)
+// KOTOI — shared types (mirror of 03_data-model.sql)
 
 import type { AppearancePreference } from '@/lib/theme';
 

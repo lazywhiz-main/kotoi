@@ -54,7 +54,7 @@
 
 ## プロジェクト構成（推奨）
 ```
-mondo/
+kotoi/
 ├─ app/                      # expo-router 画面
 │  ├─ (tabs)/
 │  │  ├─ index.tsx           # ホーム/最近のメモ

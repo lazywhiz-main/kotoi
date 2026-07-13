@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MONDO — チュートリアル流れモック v2（現行UI固定）</title>
+<title>KOTOI — チュートリアル流れモック v2（現行UI固定）</title>
 <style>
   /* 下地トークン = lib/theme.ts light に合わせる。チュートリアル層以外で新色を足さない */
   :root{
@@ -125,7 +125,7 @@
 </head>
 <body>
   <div class="head">
-    <h1>MONDO — チュートリアル流れモック v2</h1>
+    <h1>KOTOI — チュートリアル流れモック v2</h1>
     <p>読ませない案内 ＋ <b>下地は現行アプリのまま</b>。チュートリアルはリング・囁き・短い印・タブ脈動だけ。</p>
     <div class="rule">
       <b>絶対ルール:</b> チュートリアルとして追加・強調する要素以外は、いまのアプリデザインを崩さない。
@@ -180,7 +180,7 @@ const tabs = (on, pulse) => `
 
 const SCENES = {
   home0: () => ({
-    nav: `<div class="title">MONDO</div>`,
+    nav: `<div class="title">KOTOI</div>`,
     tabs: tabs('home'),
     body: `
       <div class="composer emphasized tut-ring">
@@ -201,7 +201,7 @@ const SCENES = {
   }),
 
   capture: () => ({
-    nav: `<div class="title">MONDO</div>`,
+    nav: `<div class="title">KOTOI</div>`,
     tabs: tabs('home'),
     body: `
       <div class="composer emphasized">
@@ -237,7 +237,7 @@ const SCENES = {
   }),
 
   shelfHint: () => ({
-    nav: `<div class="title">MONDO</div>`,
+    nav: `<div class="title">KOTOI</div>`,
     tabs: tabs('home', 'shelf'),
     body: `
       <div class="composer">

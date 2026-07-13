@@ -1,4 +1,4 @@
-// MONDO — shared types (mirror of 03_data-model.sql). Place at lib/types.ts.
+// KOTOI — shared types (mirror of 03_data-model.sql). Place at lib/types.ts.
 
 export type NoteType = 'seed' | 'learn' | 'task' | 'feeling' | 'ref';
 export type ItemAuthor = 'ai' | 'user' | 'agent';

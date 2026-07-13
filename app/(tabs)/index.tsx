@@ -74,7 +74,7 @@ export default function HomeScreen() {
     <View style={styles.safe}>
       <Stack.Screen
         options={{
-          title: 'MONDO',
+          title: 'KOTOI',
           headerRight: () => (
             <Pressable
               accessibilityLabel="設定"

@@ -1,5 +1,5 @@
 export const DAILY_LIMIT_MESSAGE = '本日の利用上限に達しました。明日また試してください。';
-export const PAYWALL_MESSAGE = '次の見取り図から、MONDOの続きを。';
+export const PAYWALL_MESSAGE = '次の見取り図から、KOTOIの続きを。';
 export const READ_ONLY_MESSAGE =
   'いまは閲覧のみです。これまでの記録はそのまま残っています。';
 

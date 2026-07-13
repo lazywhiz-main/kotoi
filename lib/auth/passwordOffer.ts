@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const DONE_KEY = 'mondo_password_offer_done';
-const PENDING_KEY = 'mondo_password_offer_pending';
+const DONE_KEY = 'kotoi_password_offer_done';
+const PENDING_KEY = 'kotoi_password_offer_pending';
 
 export async function isPasswordOfferDone(): Promise<boolean> {
   return (await AsyncStorage.getItem(DONE_KEY)) === '1';

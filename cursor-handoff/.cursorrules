@@ -1,7 +1,7 @@
-# MONDO — Cursor rules
+# KOTOI — Cursor rules
 
 ## プロダクト
-MONDO: 雑多メモを分類・要約・調査し、「次の問い」を返す個人用ノート。核は問いの生成。詳細は cursor-handoff/01〜06 と mocks/mock_*.html を参照。
+KOTOI: 雑多メモを分類・要約・調査し、「次の問い」を返す個人用ノート。核は問いの生成。詳細は cursor-handoff/01〜06 と mocks/mock_*.html を参照。
 
 ## スタック / 規約
 - Expo (React Native) + expo-router + TypeScript(strict)。関数コンポーネント + hooks。

@@ -18,12 +18,15 @@
 | **主ドメイン（ブランド）** | **`kotoi.art`** — LP・共有ページ・OGP・ウォーターマーク |
 | 技術ドメイン | **`kotoi.app`** — Universal Link / App Links の予備、`kotoi.art` へのリダイレクト |
 | `.com` 受け皿 | **`kotoiapp.com`** — `kotoi.art` へリダイレクトのみ |
-| **iOS bundle ID** | **`app.kotoi`**（現行は `app.mondo.notes`） |
-| **Android package** | **`app.kotoi`**（現行は `app.mondo.notes`） |
+| **iOS bundle ID** | **`app.kotoi`**（`kotoi.app` の reverse-DNS。旧 `app.mondo.notes`） |
+| **Android package** | **`app.kotoi`**（同上） |
 | URLスキーム | **`kotoi://`**（現行は `mondo://`） |
 | Expo slug | **`kotoi`**（現行は `mondo`） |
 | X | `@kotoi_app` |
 | Instagram | `@kotoi.app` |
+
+**所有ドメイン（確定）:** `kotoi.app` / `kotoi.art` / `kotoiapp.com`（＋コーポレート `lazywhiz.io`）。  
+Bundle はブランド顔の `.art` ではなく、技術ドメイン `.app` の逆引き **`app.kotoi`** とする（[Apple glossary](https://developer.apple.com/help/glossary/bundle-id/) の reverse-DNS）。段数が2なのはドメインが2ラベルだからで問題ない。
 
 **⚠️ bundle ID / package name は、ストア公開後は二度と変更できない。** ここを間違えると取り返しがつかない。
 

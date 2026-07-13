@@ -1,4 +1,4 @@
-# MONDO — ハンドオフ仕様 v2
+# KOTOI — ハンドオフ仕様 v2
 
 > **v2（2026-07-11）**: v1（`cursor-handoff/`）に **見取り図（graphic recording）** を体験②の正式要素として追加した版。  
 > 実装の詳細・合意ログは既存の `docs/design-exploration-*.md` / `docs/plan-exploration-*.md` を正とする。  
