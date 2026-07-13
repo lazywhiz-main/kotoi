@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONDO — オープニング v2（デザイン強化）</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;background:#e9e6de;color:#26251f;
+       display:flex;flex-direction:column;align-items:center;padding:26px 16px 50px}
+  .head{width:100%;max-width:560px;margin-bottom:16px}
+  .head h1{font-size:19px;font-weight:600}
+  .head p{font-size:13px;color:#6b6960;margin-top:4px;line-height:1.6}
+  .phone{width:360px;background:#000;border-radius:44px;padding:11px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+  .scr{position:relative;width:338px;height:700px;border-radius:33px;overflow:hidden;background:#100f0d}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:116px;height:24px;background:#000;border-radius:0 0 15px 15px;z-index:6}
+  canvas{display:block;width:338px;height:700px}
+  .controls{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .controls button{font:inherit;font-size:13px;font-weight:500;border:1px solid #d9d5c9;background:#fff;color:#3d3b34;padding:9px 15px;border-radius:22px;cursor:pointer}
+  .controls button:hover{background:#f4f2ec}
+  .controls button.on{background:#3a3630;color:#f7f5ef;border-color:#3a3630}
+  .foot{width:100%;max-width:560px;margin-top:16px;font-size:12px;color:#6b6960;line-height:1.7}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>MONDO — オープニング v2</h1>
+    <p>有機的な枝・飛沫・屈折波紋・粒状感を追加。テーマ（深い/淡い水面）と速度を切り替えて質感を確認できます。</p>
+  </div>
+  <div class="phone"><div class="scr"><div class="notch"></div><canvas id="c"></canvas></div></div>
+  <div class="controls">
+    <button id="replay">&#8635; リプレイ</button>
+    <button id="tDark" class="on">深い水面</button>
+    <button id="tLight">淡い水面</button>
+    <button id="slow">ゆっくり</button>
+  </div>
+  <div class="foot">
+    <p>枝は根元が太く先が細い有機曲線でドローオン。着水で微細な飛沫が飛び、波紋は角度でわずかに歪む（屈折感）。全体に薄いグレインで紙のような質感。最後は静かな入力欄に着地し、先端がかすかに呼吸します。</p>
+  </div>
+
+<script>
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const W=338,H=700,dpr=Math.min(2,window.devicePixelRatio||1);
+cv.width=W*dpr; cv.height=H*dpr; ctx.scale(dpr,dpr);
+const cx=W/2, cy=H*0.40;
+
+const THEMES={
+  dark:{ outer:'#100f0d', inner:'#1c1815', vig:'rgba(74,66,52,0.45)', ripple:'202,190,168', edge:'248,240,226',
+    drop:'248,240,226', word:'244,242,236', glow:'255,244,222', tag:'176,168,154', grain:'255,255,255', grainA:0.022,
+    pill:'128,120,108', pillFill:'255,255,255', pillFillA:0.05, ph:'208,201,188', caret:'214,207,194', hint:'150,143,131',
+    tips:{dig:'#9a93f0',con:'#66d8b1',ref:'#f4ab8b',act:'#abd873',exp:'#93c4f5'} },
+  light:{ outer:'#e7e3da', inner:'#f2efe8', vig:'rgba(176,166,146,0.22)', ripple:'128,118,100', edge:'96,88,76',
+    drop:'70,62,50', word:'38,37,31', glow:'255,255,255', tag:'120,116,108', grain:'40,36,28', grainA:0.03,
+    pill:'150,145,135', pillFill:'0,0,0', pillFillA:0.03, ph:'112,108,100', caret:'82,78,70', hint:'140,135,126',
+    tips:{dig:'#6f66d0',con:'#2fa77f',ref:'#c9663a',act:'#5f8f2f',exp:'#4f7fc0'} }
+};
+let TH=THEMES.dark;
+
+const BR=[
+  {a:-90, key:'dig', lab:'深掘り', w:0.0},
+  {a:-20, key:'con', lab:'接続',  w:8},
+  {a:52,  key:'ref', lab:'反証',  w:-7},
+  {a:128, key:'act', lab:'行動',  w:7},
+  {a:200, key:'exp', lab:'拡張',  w:-9}
+];
+const T={dropStart:0.6,impact:1.5,brStart:1.78,brDur:1.5,brStag:0.14,wordStart:3.3,wordDur:0.9,capStart:4.7,capDur:1.0,end:6.0};
+let speed=1, startT=null, raf=null, particles=[], grainPat=null;
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const easeOut=x=>1-Math.pow(1-clamp(x,0,1),3);
+const easeInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const rgba=(c,a)=>'rgba('+c+','+a+')';
+
+function makeGrain(){ const s=64, oc=document.createElement('canvas'); oc.width=s; oc.height=s;
+  const g=oc.getContext('2d'), id=g.createImageData(s,s);
+  for(let i=0;i<id.data.length;i+=4){ const v=Math.random()*255; id.data[i]=id.data[i+1]=id.data[i+2]=v; id.data[i+3]=255; }
+  g.putImageData(id,0,0); grainPat=ctx.createPattern(oc,'repeat'); }
+makeGrain();
+
+function bez(p0,c1,c2,p3,t){ const u=1-t, tt=t*t, uu=u*u;
+  return { x:uu*u*p0.x+3*uu*t*c1.x+3*u*tt*c2.x+tt*t*p3.x, y:uu*u*p0.y+3*uu*t*c1.y+3*u*tt*c2.y+tt*t*p3.y }; }
+
+function bg(t){ const g=ctx.createRadialGradient(cx,cy,8,cx,cy,H*0.75);
+  g.addColorStop(0,TH.inner); g.addColorStop(1,TH.outer); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  const v=ctx.createRadialGradient(cx,cy,H*0.3,cx,cy,H*0.72);
+  v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,TH.vig); ctx.fillStyle=v; ctx.fillRect(0,0,W,H); }
+function caustics(t){ ctx.strokeStyle=rgba(TH.ripple,0.05); ctx.lineWidth=1;
+  for(let i=0;i<5;i++){ const y=cy+(i-2)*52; ctx.beginPath();
+    for(let x=0;x<=W;x+=7){ const yy=y+Math.sin(x*0.045+t*1.0+i*1.3)*2.6+Math.sin(x*0.13-t*0.6)*1.2; x===0?ctx.moveTo(x,yy):ctx.lineTo(x,yy);} ctx.stroke(); } }
+function grain(){ if(!grainPat) return; ctx.save(); ctx.globalAlpha=TH.grainA; ctx.globalCompositeOperation='overlay';
+  ctx.fillStyle=grainPat; ctx.fillRect(0,0,W,H); ctx.restore(); }
+
+function drop(t){ if(t<T.dropStart||t>T.impact+0.05) return;
+  const p=clamp((t-T.dropStart)/(T.impact-T.dropStart),0,1); const y=-24+(cy+24)*easeInOut(p);
+  const stretch=1+Math.pow(p,1.5)*2.2;
+  ctx.fillStyle=rgba(TH.drop,0.5); ctx.beginPath(); ctx.ellipse(cx,y-6*stretch,1.2,7*stretch,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=rgba(TH.drop,0.95); ctx.beginPath(); ctx.ellipse(cx,y,2.6,3.1*stretch,0,0,Math.PI*2); ctx.fill(); }
+
+function spawnParticles(){ particles=[]; const n=16;
+  for(let i=0;i<n;i++){ const a=(-Math.PI/2)+(Math.random()-0.5)*Math.PI*1.1;
+    particles.push({a, sp:60+Math.random()*90, r:0.8+Math.random()*1.6, life:0.5+Math.random()*0.35}); } }
+function drawParticles(t,fade){ if(t<T.impact) return; const age=t-T.impact;
+  particles.forEach(pt=>{ if(age>pt.life) return; const pr=age/pt.life;
+    const dist=pt.sp*age*(1-pr*0.3); const x=cx+Math.cos(pt.a)*dist; const y=cy+Math.sin(pt.a)*dist+ (age*age*160);
+    const al=(1-pr)*0.8*fade; ctx.fillStyle=rgba(TH.edge,al); ctx.beginPath(); ctx.arc(x,y,pt.r*(1-pr*0.4),0,Math.PI*2); ctx.fill(); }); }
+
+function ripples(t,fade){ if(t<T.impact) return;
+  for(let k=0;k<7;k++){ const s=T.impact+k*0.32; if(t<s) continue; const age=t-s; const life=2.1; if(age>life) continue;
+    const rr=easeOut(age/life)*160; const al=(1-age/life)*0.45*fade;
+    ctx.lineWidth=1.4; ctx.beginPath();
+    for(let d=0;d<=Math.PI*2+0.05;d+=0.13){ const wob=1+Math.sin(d*3+k)*0.012+Math.sin(d*7-age*2)*0.008;
+      const x=cx+Math.cos(d)*rr*wob, y=cy+Math.sin(d)*rr*wob*0.98; d===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.closePath(); ctx.strokeStyle=rgba(TH.ripple,al); ctx.stroke();
+    ctx.lineWidth=0.8; ctx.strokeStyle=rgba(TH.edge,al*0.5); ctx.stroke(); }
+  const fa=clamp(1-(t-T.impact)/0.45,0,1)*0.7*fade; if(fa>0){ ctx.fillStyle=rgba(TH.edge,fa);
+    ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fill(); } }
+
+function branches(t,fade){
+  BR.forEach((b,i)=>{ const p=easeOut(clamp((t-T.brStart-i*T.brStag)/T.brDur,0,1)); if(p<=0) return;
+    const rad=b.a*Math.PI/180, len=140; const perp=rad+Math.PI/2;
+    const P0={x:cx,y:cy};
+    const P3={x:cx+Math.cos(rad)*len, y:cy+Math.sin(rad)*len};
+    const C1={x:cx+Math.cos(rad)*len*0.33+Math.cos(perp)*b.w, y:cy+Math.sin(rad)*len*0.33+Math.sin(perp)*b.w};
+    const C2={x:cx+Math.cos(rad)*len*0.7-Math.cos(perp)*b.w*0.6, y:cy+Math.sin(rad)*len*0.7-Math.sin(perp)*b.w*0.6};
+    const col=TH.tips[b.key]; const N=30; let prev=P0;
+    ctx.lineCap='round';
+    for(let s=1;s<=N;s++){ const tt=(s/N)*p; const pt=bez(P0,C1,C2,P3,tt);
+      const wdt=2.6*(1-tt*0.82); ctx.strokeStyle=hexA(col,0.9*fade); ctx.lineWidth=wdt;
+      ctx.beginPath(); ctx.moveTo(prev.x,prev.y); ctx.lineTo(pt.x,pt.y); ctx.stroke(); prev=pt; }
+    // growing tip glow at current end
+    const end=bez(P0,C1,C2,P3,p); const pulse=1+Math.sin(t*3+i)*0.12;
+    ctx.save(); ctx.shadowColor=hexA(col,0.6*fade); ctx.shadowBlur=12*fade;
+    ctx.fillStyle=hexA(col,0.95*fade); ctx.beginPath(); ctx.arc(end.x,end.y,(1.8+2.4*p)*pulse,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle=hexA(col,0.22*fade); ctx.beginPath(); ctx.arc(end.x,end.y,(1.8+2.4*p)*pulse+5,0,Math.PI*2); ctx.fill();
+    if(p>0.82){ const la=clamp((p-0.82)/0.18,0,1)*fade; ctx.fillStyle=hexA(col,la);
+      ctx.font='500 12px -apple-system,"Hiragino Sans",sans-serif'; ctx.textAlign='center';
+      const lx=cx+Math.cos(rad)*(len+20), ly=cy+Math.sin(rad)*(len+20)+4; ctx.fillText(b.lab,lx,ly); } }); }
+
+function wordmark(t){ const p=easeOut(clamp((t-T.wordStart)/T.wordDur,0,1)); if(p<=0) return;
+  const cap=easeInOut(clamp((t-T.capStart)/T.capDur,0,1));
+  const settle=1.05-0.05*easeOut(clamp((t-T.wordStart)/0.7,0,1));
+  const y=cy - cap*(cy-72); const size=(27-cap*12)*settle; const al=Math.min(p,1);
+  ctx.save(); ctx.textAlign='center'; ctx.shadowColor=rgba(TH.glow,0.28*al); ctx.shadowBlur=20;
+  ctx.fillStyle=rgba(TH.word,al); ctx.font='700 '+size+'px -apple-system,"Hiragino Sans",sans-serif';
+  drawSpaced('MONDO',cx,y,size*0.16*al); ctx.restore();
+  // hairline
+  const hw=(1-cap)*46*p; if(hw>1){ ctx.strokeStyle=rgba(TH.tag,0.4*al); ctx.lineWidth=0.6;
+    ctx.beginPath(); ctx.moveTo(cx-hw,y+14); ctx.lineTo(cx+hw,y+14); ctx.stroke(); }
+  if(cap<0.5){ const ta=(1-cap*2)*al; ctx.fillStyle=rgba(TH.tag,ta);
+    ctx.font='400 12px -apple-system,"Hiragino Sans",sans-serif'; ctx.textAlign='center';
+    ctx.save(); drawSpaced('問いが増える',cx,y+30,2*ta); ctx.restore(); } }
+function drawSpaced(str,x,y,sp){ ctx.textAlign='center'; const chars=[...str];
+  const widths=chars.map(c=>ctx.measureText(c).width+sp); const total=widths.reduce((a,b)=>a+b,0)-sp;
+  let cxp=x-total/2; ctx.textAlign='left'; for(let i=0;i<chars.length;i++){ ctx.fillText(chars[i],cxp,y); cxp+=widths[i]; } ctx.textAlign='center'; }
+
+function capture(t){ const p=easeOut(clamp((t-T.capStart-0.2)/T.capDur,0,1)); if(p<=0) return;
+  const w=268,h=52,x=cx-w/2,y=H*0.60,al=p;
+  ctx.save(); ctx.shadowColor='rgba(0,0,0,0.25)'; ctx.shadowBlur=18*al; ctx.shadowOffsetY=6*al;
+  ctx.fillStyle=rgba(TH.pillFill,TH.pillFillA*al); roundRect(x,y,w,h,26); ctx.fill(); ctx.restore();
+  ctx.strokeStyle=rgba(TH.pill,0.55*al); ctx.lineWidth=0.8; roundRect(x,y,w,h,26); ctx.stroke();
+  ctx.fillStyle=rgba(TH.ph,al); ctx.textAlign='left'; ctx.font='400 14px -apple-system,"Hiragino Sans",sans-serif';
+  ctx.fillText('いま、何が気になってる？', x+22, y+h/2+5);
+  const blink=(Math.sin(t*4)*0.5+0.5); ctx.fillStyle=rgba(TH.caret,al*blink); ctx.fillRect(x+20,y+16,1.5,20);
+  ctx.fillStyle=rgba(TH.hint,0.85*al); ctx.textAlign='center'; ctx.font='400 11.5px sans-serif';
+  ctx.fillText('メモも、動画リンクも。', cx, y+h+26); }
+
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
+
+function frame(now){ if(startT===null) startT=now; const t=((now-startT)/1000)*speed;
+  bg(t); caustics(t);
+  const capFade=1-easeOut(clamp((t-T.capStart)/(T.capDur*0.8),0,1));
+  drop(t); drawParticles(t,capFade); ripples(t,capFade); branches(t, 0.25+0.75*capFade);
+  wordmark(t); capture(t); grain();
+  raf=requestAnimationFrame(frame); }
+
+function play(){ if(raf) cancelAnimationFrame(raf); startT=null; spawnParticles(); raf=requestAnimationFrame(frame); }
+document.getElementById('replay').onclick=()=>{ speed=1; play(); };
+document.getElementById('slow').onclick=()=>{ speed=0.5; play(); };
+document.getElementById('tDark').onclick=e=>{ TH=THEMES.dark; document.querySelector('.scr').style.background='#100f0d';
+  e.target.classList.add('on'); document.getElementById('tLight').classList.remove('on'); play(); };
+document.getElementById('tLight').onclick=e=>{ TH=THEMES.light; document.querySelector('.scr').style.background='#eae7df';
+  e.target.classList.add('on'); document.getElementById('tDark').classList.remove('on'); play(); };
+play();
+</script>
+</body>
+</html>

@@ -1,56 +1,137 @@
-import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { Stack, Redirect, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import { AuthProvider, useAuth } from '@/providers/AuthProvider';
+import { usePushNotificationNavigation } from '@/hooks/usePushNotificationNavigation';
+import { OpeningGateProvider, useOpeningGate } from '@/providers/OpeningGateProvider';
+import { ThemeProvider, useColors, useTheme } from '@/providers/ThemeProvider';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+void SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
+function RootNavigator() {
+  const { session, loading, configured, passwordOfferPending } = useAuth();
+  const { completed: openingCompleted, loading: openingLoading } = useOpeningGate();
+  const colors = useColors();
+  const { scheme } = useTheme();
+  const segments = useSegments();
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+  usePushNotificationNavigation(!!session && openingCompleted === true && !passwordOfferPending);
 
-export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  const onOpening = segments[0] === 'opening';
+  const inAuthGroup = segments[0] === '(auth)';
+  const inDev = segments[0] === 'dev';
+  const onPasswordOffer = segments[0] === 'password-offer';
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
+  const ready = !loading && !openingLoading;
+
   useEffect(() => {
-    if (error) throw error;
-  }, [error]);
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    if (ready) {
+      void SplashScreen.hideAsync().catch(() => {});
     }
-  }, [loaded]);
+  }, [ready]);
 
-  if (!loaded) {
-    return null;
+  if (!ready) {
+    return (
+      <View style={[styles.loading, { backgroundColor: colors.bg }]}>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    );
   }
 
-  return <RootLayoutNav />;
-}
+  if (openingCompleted === false && !onOpening && !inDev) {
+    return <Redirect href="/opening" />;
+  }
 
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  if (openingCompleted === true && onOpening) {
+    if (!configured || !session) {
+      return <Redirect href="/(auth)/login" />;
+    }
+    if (passwordOfferPending) {
+      return <Redirect href="/password-offer" />;
+    }
+    return <Redirect href="/(tabs)" />;
+  }
+
+  if (openingCompleted === true) {
+    if (!configured || !session) {
+      if (!inAuthGroup && !inDev) {
+        return <Redirect href="/(auth)/login" />;
+      }
+    } else if (passwordOfferPending) {
+      if (!onPasswordOffer) {
+        return <Redirect href="/password-offer" />;
+      }
+    } else if (onPasswordOffer) {
+      return <Redirect href="/(tabs)" />;
+    } else if (inAuthGroup) {
+      return <Redirect href="/(tabs)" />;
+    }
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+    <>
+      <StatusBar style={onOpening || scheme === 'dark' ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.bg },
+          headerTintColor: colors.ink,
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: colors.bg },
+        }}
+      >
+        <Stack.Screen name="opening" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="password-offer" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="paywall"
+          options={{ title: '続ける', presentation: 'modal', headerBackTitle: '閉じる' }}
+        />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'ホーム' }} />
+        <Stack.Screen
+          name="note/[id]"
+          options={{ title: '育つスレッド', headerBackTitle: 'ホーム' }}
+        />
+        <Stack.Screen
+          name="note/transcript/[id]"
+          options={{ title: '文字起こし', headerBackTitle: '育つスレッド' }}
+        />
+        <Stack.Screen name="exploration/[id]" options={{ title: '問いの地図', headerBackTitle: '探究' }} />
+        <Stack.Screen name="settings" options={{ title: '設定', headerBackTitle: 'ホーム' }} />
+        <Stack.Screen
+          name="dev/opening-skia"
+          options={{ title: 'Skia オープニング検証', headerBackTitle: '設定' }}
+        />
       </Stack>
-    </ThemeProvider>
+    </>
   );
 }
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={styles.root}>
+      <AuthProvider>
+        <OpeningGateProvider>
+          <ThemeProvider>
+            <RootNavigator />
+          </ThemeProvider>
+        </OpeningGateProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

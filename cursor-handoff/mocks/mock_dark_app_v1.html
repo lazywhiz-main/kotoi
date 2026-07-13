@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONDO — ダークモード アプリモック v1</title>
+<style>
+  :root{
+    --bg:#100f0d;--card:#1c1815;--card2:#221d18;--line:#2c2620;--line2:#3a342c;
+    --ink:#ece7dd;--sub:#9c9488;--hint:#6f695e;
+    --you:#e3b665;--you-bg:rgba(227,182,101,0.12);--you-bd:rgba(227,182,101,0.34);
+    --dig:#9a93f0;--dig-bg:rgba(122,119,221,0.17);--con:#66d8b1;--con-bg:rgba(29,158,117,0.17);
+    --ref:#f4ab8b;--ref-bg:rgba(216,90,48,0.16);--act:#abd873;--act-bg:rgba(99,153,34,0.17);--exp:#93c4f5;--exp-bg:rgba(55,138,221,0.17);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;background:#0b0a09;color:#ece7dd;
+       display:flex;flex-direction:column;align-items:center;padding:26px 16px 60px;-webkit-font-smoothing:antialiased}
+  .head{width:100%;max-width:640px;margin-bottom:14px}
+  .head h1{font-size:19px;font-weight:600;color:#ece7dd}
+  .head p{font-size:13px;color:#9c9488;margin-top:4px;line-height:1.6}
+  .seg{display:inline-flex;background:#1c1815;border:1px solid #2c2620;border-radius:11px;padding:3px;margin-top:8px}
+  .seg button{border:0;background:transparent;font:inherit;font-size:13px;color:#9c9488;padding:8px 15px;border-radius:8px;cursor:pointer;font-weight:500}
+  .seg button.on{background:#ece7dd;color:#1c1815}
+  .phone{width:392px;background:#000;border-radius:44px;padding:11px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .scr{background:var(--bg);border-radius:34px;overflow:hidden;height:770px;display:flex;flex-direction:column;position:relative}
+  .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#000;border-radius:0 0 16px 16px;z-index:6}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;color:#ece7dd;flex:0 0 auto}
+  .appbar{flex:0 0 auto;padding:4px 18px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+  .appbar .back{font-size:22px;color:#6f695e}.appbar .ttl{font-size:15px;font-weight:600}
+  .appbar .spacer{flex:1}.appbar .dots{color:#6f695e;font-size:18px}
+  .body{flex:1;overflow-y:auto;padding:14px 16px 14px}.body::-webkit-scrollbar{width:0}
+  .rootrow{display:flex;gap:6px;margin-bottom:12px}
+  .rootrow button{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--sub);padding:6px 12px;border-radius:20px;cursor:pointer}
+  .rootrow button.on{background:#2a251f;color:#ece7dd;border-color:#3a342c}
+
+  .memo{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px;margin-bottom:6px}
+  .chips{display:flex;gap:6px;margin-bottom:9px}
+  .chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+  .chip.learn{color:#93c4f5;background:rgba(55,138,221,.16)}.chip.seed{color:#e3b665;background:rgba(227,182,101,.14)}.chip.vid{color:#f4ab8b;background:rgba(216,90,48,.16)}
+  .memo .raw{font-size:14.5px;line-height:1.7;color:#e6e1d6}
+  .memo .meta{font-size:11.5px;color:var(--hint);margin-top:9px}
+  .vidcard{display:flex;gap:10px;margin-top:11px;background:#181410;border:1px solid var(--line);border-radius:12px;padding:9px;align-items:center}
+  .vidthumb{width:74px;height:50px;border-radius:8px;background:linear-gradient(135deg,#7b241c,#3a1510);flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:#f4ab8b;font-size:19px}
+  .vidcard .vt{font-size:12.5px;font-weight:600;line-height:1.4;color:#e6e1d6}.vidcard .vs{font-size:11px;color:var(--hint);margin-top:3px}
+
+  .rail{margin-left:8px;border-left:2px solid #2f2a24;padding-left:16px;margin-top:4px}
+  .item{position:relative;margin-bottom:12px}
+  .item:before{content:"";position:absolute;left:-23px;top:6px;width:12px;height:12px;border-radius:50%;background:#4a443b;border:2px solid var(--bg)}
+  .item.ai:before{background:#cfc8ba;box-shadow:0 0 8px rgba(207,200,186,.4)}.item.you:before{background:var(--you)}.item.work:before{background:#c99a3a}
+  .who{font-size:10.5px;font-weight:700;letter-spacing:.03em;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+  .who .n{color:var(--sub)}
+  .card2{border-radius:13px;padding:11px 13px;font-size:13.5px;line-height:1.7}
+  .ai .card2{background:var(--card);border:1px solid var(--line);color:#e6e1d6}
+  .you .card2{background:var(--you-bg);border:1px solid var(--you-bd);color:#f0e4cf}
+  .work .card2{background:rgba(255,240,210,.03);border:1px dashed rgba(201,154,58,.4);color:#b8b0a4;font-size:12.5px}
+  .qtag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:12px}
+  .t-dig{color:var(--dig);background:var(--dig-bg)}.t-con{color:var(--con);background:var(--con-bg)}
+  .t-ref{color:var(--ref);background:var(--ref-bg)}.t-act{color:var(--act);background:var(--act-bg)}.t-exp{color:var(--exp);background:var(--exp-bg)}
+  .newq{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line2);font-size:13px;line-height:1.6;color:#e6e1d6}
+  .newq .lead{font-size:10.5px;color:var(--hint);font-weight:700;margin-bottom:4px}
+  .rowbtns{display:flex;gap:7px;margin-top:9px}
+  .rowbtns button{font:inherit;font-size:11.5px;border:1px solid var(--line2);background:#211c17;color:var(--sub);padding:5px 10px;border-radius:9px;cursor:pointer}
+
+  .composer{flex:0 0 auto;border-top:1px solid var(--line);background:#151210;padding:9px 12px 12px}
+  .intents{display:flex;gap:6px;margin-bottom:8px;overflow-x:auto}
+  .intents button{font:inherit;font-size:12px;font-weight:500;white-space:nowrap;border:1px solid var(--line2);background:#211c17;color:#b8b0a4;padding:6px 12px;border-radius:20px;cursor:pointer}
+  .intents button.sel{background:#ece7dd;color:#1c1815;border-color:#ece7dd}
+  .inbar{display:flex;gap:8px;align-items:center;background:#211c17;border:1px solid var(--line2);border-radius:22px;padding:5px 5px 5px 14px}
+  .inbar input{flex:1;border:0;font:inherit;font-size:13px;background:transparent;outline:none;color:#ece7dd}
+  .inbar input::placeholder{color:#6f695e}
+  .inbar .send{width:34px;height:34px;border-radius:50%;background:#ece7dd;color:#1c1815;border:0;font-size:16px;cursor:pointer;flex:0 0 auto}
+  .modehint{font-size:11px;color:var(--hint);margin:0 0 7px 4px}
+
+  .brand{flex:0 0 auto;padding:2px 20px 12px;display:flex;align-items:baseline;gap:9px;border-bottom:1px solid var(--line)}
+  .brand .logo{font-size:20px;font-weight:700;letter-spacing:.14em;color:#ece7dd}
+  .brand .sub{font-size:11.5px;color:var(--hint)}
+  .h2{font-size:15px;font-weight:600;margin-bottom:3px;color:#ece7dd}
+  .lead{font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.6}
+  .filters{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;padding-bottom:2px}
+  .filters button{font:inherit;font-size:12px;white-space:nowrap;border:1px solid var(--line2);background:#211c17;color:#b8b0a4;padding:5px 11px;border-radius:20px;cursor:pointer}
+  .filters button.on{background:#ece7dd;color:#1c1815;border-color:#ece7dd}
+  .qrow{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin-bottom:9px;cursor:pointer}
+  .qrow .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+  .qrow .q{font-size:13.5px;line-height:1.65;font-weight:500;color:#e6e1d6}
+  .qrow .src{font-size:11px;color:var(--hint);margin-top:7px}
+  .qrow .go{font-size:16px;color:#4a443b}
+
+  .theme{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:12px}
+  .theme .tt{font-size:15px;font-weight:600;margin-bottom:8px;color:#ece7dd}
+  .theme .stat{font-size:11.5px;color:var(--sub);display:flex;gap:12px;margin-bottom:11px}.theme .stat b{color:#ece7dd;font-weight:600}
+  .theme .synth{background:#181410;border-left:3px solid #4a443b;border-radius:0 8px 8px 0;padding:10px 12px;font-size:13px;line-height:1.65;color:#d8d2c6}
+  .theme .synth .l{font-size:10.5px;color:var(--hint);font-weight:700;display:block;margin-bottom:4px}
+  .prog{height:6px;background:#241f1a;border-radius:6px;margin:12px 0 6px;overflow:hidden}.prog i{display:block;height:100%;background:#8a8577}
+  .theme .pl{font-size:11px;color:var(--hint)}
+  .theme .open{margin-top:12px;width:100%;font:inherit;font-size:13px;font-weight:500;border:1px solid var(--line2);background:#211c17;color:#e6e1d6;padding:9px;border-radius:10px;cursor:pointer}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:16px}
+  .stat-c{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .stat-c .n{font-size:22px;font-weight:600;color:#ece7dd}.stat-c .l{font-size:11.5px;color:var(--sub);margin-top:2px}
+  .block{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:11px}
+  .block .bl{font-size:11px;font-weight:700;color:var(--hint);letter-spacing:.03em;margin-bottom:7px}.block .bt{font-size:13.5px;line-height:1.65;color:#e6e1d6}
+  .recall{background:rgba(227,182,101,.07);border:1px dashed var(--you-bd);border-radius:14px;padding:13px 14px;margin-bottom:11px}.recall .bl{color:#e3b665}.recall .bt{color:#e6e1d6;font-size:13.5px;line-height:1.65}
+  .maplink{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;cursor:pointer}
+  .maplink .mt{font-size:13.5px;font-weight:500;color:#ece7dd}.maplink .ms{font-size:11.5px;color:var(--hint);margin-top:2px}
+  .tabbar{flex:0 0 auto;border-top:1px solid var(--line);background:#151210;display:flex;padding:8px 8px 12px}
+  .tabbar button{flex:1;border:0;background:transparent;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:#6f695e;font-size:11px}
+  .tabbar button i{font-size:20px;font-style:normal}.tabbar button.on{color:#ece7dd;font-weight:600}
+  .foot{width:100%;max-width:640px;margin-top:18px;font-size:12px;color:#9c9488;line-height:1.7}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>MONDO — ダークモード アプリモック</h1>
+    <p>オープニングの世界観をアプリ本体へ延長。上で体験①（スレッド）と②（溜まった後）を切り替え。①はルート切替＋意図ボタン、②は下タブ＋問いの地図が動きます。</p>
+    <div class="seg" id="appseg">
+      <button data-v="thread" class="on">体験① スレッド</button>
+      <button data-v="acc">体験② 溜まった後</button>
+    </div>
+  </div>
+
+  <div class="phone"><div class="scr">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span>&#9679;&#9679;&#9679; &#128246; &#128267;</span></div>
+    <div id="stage" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+  </div></div>
+
+  <div class="foot">
+    <p>発光する5類型カラー（深掘り=紫 / 接続=緑青 / 反証=珊瑚 / 行動=緑 / 拡張=青）が暗い地に映えます。問いの地図は暗背景でネットワークが特に美しく見えます。ダミーデータです。</p>
+  </div>
+
+<script>
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const COL={'t-dig':['#9a93f0','rgba(122,119,221,0.18)'],'t-con':['#66d8b1','rgba(29,158,117,0.18)'],'t-ref':['#f4ab8b','rgba(216,90,48,0.17)'],'t-act':['#abd873','rgba(99,153,34,0.18)'],'t-exp':['#93c4f5','rgba(55,138,221,0.18)']};
+
+/* ---------------- 体験① スレッド ---------------- */
+const ROOTS={
+  text:{title:"メモ",
+    memo:'<div class="memo"><div class="chips"><span class="chip learn">学び</span><span class="chip seed">ひらめき</span></div><div class="raw">「小さいチームほど意思決定が速い」って記事読んだ。でも今のBD案件、人が少なすぎて逆に詰まってる感覚があるんだよな。</div><div class="meta">7月8日 23:14 · テキスト</div></div>',
+    seed:[
+      {cls:'ai',who:'要約',body:'記事の主張は「少人数＝意思決定が速い」。ただし前提に〈メンバーの能力〉〈情報共有〉〈権限委譲〉が隠れている。人数そのものより、これらが揃っているかが効いている可能性。'},
+      {cls:'ai',who:'問い',tag:['t-dig','深掘り'],body:'「速い」の中身は？　決定のスピードと、決定の質を分けて捉えてる？'},
+      {cls:'ai',who:'問い',tag:['t-con','接続'],body:'6/24の『情報が特定の人に偏ってる』メモと、同じ問題を別角度で見ているのでは？',actions:true},
+      {cls:'ai',who:'問い',tag:['t-ref','反証'],body:'本当の変数が〈人数〉でなく〈誰が決めるか〉なら、増員しても速くならない。どっち？',actions:true}
+    ]},
+  video:{title:"動画メモ",
+    memo:'<div class="memo"><div class="chips"><span class="chip vid">動画</span><span class="chip learn">学び</span></div><div class="raw">あとで見る。プロダクトの価格設定の話。</div><div class="vidcard"><div class="vidthumb">&#9654;</div><div><div class="vt">SaaSの値付けを間違える3つのパターン</div><div class="vs">YouTube · 14:32 · 文字起こし取得済み</div></div></div><div class="meta">7月7日 08:02 · 動画リンク</div></div>',
+    seed:[
+      {cls:'ai',who:'文字起こし要約',body:'値付けの典型的な失敗は3つ。①コスト積み上げ ②競合に横並び ③一度決めたら動かさない。主張は「価格は実験対象であり、定期的に見直す前提で設計せよ」。'},
+      {cls:'ai',who:'問い',tag:['t-dig','深掘り'],body:'3パターンのうち、自社が一番ハマりやすいのはどれ？　それはなぜ？'},
+      {cls:'ai',who:'問い',tag:['t-con','接続'],body:'先週の『松竹梅の"松"が売れない』メモは、この動画のどのパターンに当たる？',actions:true},
+      {cls:'ai',who:'問い',tag:['t-ref','反証'],body:'動画は〈値上げすべき〉前提。値下げで量を取る方が正しい局面は、自社に本当にない？',actions:true}
+    ]}
+};
+const HINTS={note:'「追記」を選択中 — 思ったことをそのまま残せます',ask:'「AIに質問」を選択中 — 疑問に答え、さらに問いを返します',research:'「調べる」を選択中 — 依頼するとエージェントが動いて結果が返ります',dig:'「深掘り」を選択中 — 前提を分解して掘り下げます'};
+const CANNED={
+  text:{
+    note:()=>{ push({cls:'you',body:'たしかに、決定者が自分に集中してる気がする。'}); setTimeout(()=>push({cls:'ai',who:'問い',tag:['t-con','接続'],body:'それは6/24の権限メモと繋がる。委譲できる意思決定の"最小単位"は何？'}),700); },
+    ask:()=>{ push({cls:'you',body:'少人数の弊害って、一般にどう言われてる？'}); setTimeout(()=>push({cls:'ai',who:'回答',body:'よく挙がるのは〈属人化〉〈視点の偏り〉〈一人が詰まると全体が止まる〉の3つ。今の"詰まり"は3つ目に近いかも。',newq:{t:['t-act','行動'],q:'一人が詰まると止まる箇所を、1つ特定して分散できる？'}}),800); },
+    research:()=>{ push({cls:'you',body:'「少人数＝速い」の実証研究があるか調べて。'}); const id=push({cls:'work',body:'調査中… 関連研究とデータを収集しています'}); setTimeout(()=>replace(id,{cls:'work',body:'調べました：チーム規模と意思決定速度の研究では、規模そのものより〈情報の非対称性〉が速度を左右するという知見が複数。',newq:{t:['t-dig','深掘り'],q:'あなたのチームの"詰まり"は、情報の非対称のどこで起きてる？'}}),1100); },
+    dig:()=>{ push({cls:'you',body:'この記事の前提をもっと深掘りして。'}); const id=push({cls:'work',body:'前提を分解しています…'}); setTimeout(()=>replace(id,{cls:'work',body:'前提は3層：①メンバー能力 ②情報共有 ③権限委譲。崩れているのは②③の可能性。',newq:{t:['t-act','行動'],q:'②情報共有と③権限委譲、今週動かせるのはどっち？'}}),1100); }
+  },
+  video:{
+    note:()=>{ push({cls:'you',body:'うち、価格を1年変えてないな…'}); setTimeout(()=>push({cls:'ai',who:'問い',tag:['t-con','接続'],body:'それは③据え置きパターンそのもの。据え置き中に、提供価値やコストは動いてない？'}),700); },
+    ask:()=>{ push({cls:'you',body:'SaaSの値付けで一番多い失敗は？'}); setTimeout(()=>push({cls:'ai',who:'回答',body:'「据え置き（改定しない）」が最多と言われる。値上げ＝悪という思い込みが背景。',newq:{t:['t-ref','反証'],q:'あなたの"値上げが怖い"は、データ？　それとも感覚？'}}),800); },
+    research:()=>{ push({cls:'you',body:'値上げで解約を増やさなかった事例を調べて。'}); const id=push({cls:'work',body:'調査中… 価格改定の事例を収集しています'}); setTimeout(()=>replace(id,{cls:'work',body:'調べました：成果別課金へ移行し、解約率を上げずにARPUを上げた事例が複数。鍵は「顧客が得た価値と価格を連動させた」こと。',newq:{t:['t-dig','深掘り'],q:'自社の価格は"コスト基準"と"価値基準"のどっち寄り？'}}),1100); },
+    dig:()=>{ push({cls:'you',body:'3パターンを自社に当てはめて具体化して。'}); const id=push({cls:'work',body:'3パターンを分解しています…'}); setTimeout(()=>replace(id,{cls:'work',body:'①コスト積み上げ ②競合横並び ③据え置き。自社は②と③が混在の可能性。',newq:{t:['t-act','行動'],q:'②競合横並びから抜けるなら、自社独自の価値を1つ言語化する？'}}),1100); }
+  }
+};
+let curRoot='text', mode='research', seed=[];
+function itemHTML(it){
+  let tag=it.tag?`<span class="qtag ${it.tag[0]}">${it.tag[1]}</span>`:'';
+  let who=it.cls==='you'?'あなた':(it.cls==='work'?'エージェント':(it.who||'MONDO'));
+  let newq=it.newq?`<div class="newq"><div class="lead">↳ ここから生えた新しい問い</div><span class="qtag ${it.newq.t[0]}">${it.newq.t[1]}</span> ${it.newq.q}</div>`:'';
+  let acts=it.actions?`<div class="rowbtns"><button onclick="quick('research')">調べる</button><button onclick="quick('dig')">深掘り</button></div>`:'';
+  return `<div class="item ${it.cls}"><div class="who">${tag}<span class="n">${who}</span></div><div class="card2">${it.body}${newq}${acts}</div></div>`;
+}
+function renderTrail(){ document.getElementById('rail').innerHTML=seed.map(itemHTML).join(''); }
+function scrollEnd(){ const b=document.getElementById('tbody'); b.scrollTop=b.scrollHeight; }
+function push(it){ it._id='i'+Math.random().toString(36).slice(2); seed.push(it); renderTrail(); scrollEnd(); return it._id; }
+function replace(id,it){ const i=seed.findIndex(x=>x._id===id); it._id=id; seed[i]=it; renderTrail(); scrollEnd(); }
+function quick(m){ CANNED[curRoot][m](); }
+function initRoot(k){ curRoot=k; seed=JSON.parse(JSON.stringify(ROOTS[k].seed));
+  document.getElementById('memoblock').innerHTML=ROOTS[k].memo; document.getElementById('apptitle').textContent=ROOTS[k].title;
+  renderTrail(); document.getElementById('tbody').scrollTop=0; }
+function buildThread(){
+  stage.innerHTML=`
+    <div class="appbar"><span class="back">&#8249;</span><span class="ttl" id="apptitle">メモ</span><span class="spacer"></span><span class="dots">&#8943;</span></div>
+    <div class="body" id="tbody">
+      <div class="rootrow" id="rootrow"><button data-r="text" class="on">テキストをルートに</button><button data-r="video">動画をルートに</button></div>
+      <div id="memoblock"></div><div class="rail" id="rail"></div>
+    </div>
+    <div class="composer">
+      <div class="modehint" id="modehint"></div>
+      <div class="intents" id="intents">
+        <button data-i="note">＋ 追記</button><button data-i="ask">AIに質問</button><button data-i="research" class="sel">調べる</button><button data-i="dig">深掘り</button>
+      </div>
+      <div class="inbar"><input id="tinput" placeholder="依頼を書く…（空でも送信でデモが動きます）"><button class="send" id="tsend">&#8593;</button></div>
+    </div>`;
+  mode='research';
+  stage.querySelectorAll('#rootrow button').forEach(b=>b.onclick=()=>{ stage.querySelectorAll('#rootrow button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); initRoot(b.dataset.r); });
+  stage.querySelectorAll('#intents button').forEach(b=>b.onclick=()=>{ mode=b.dataset.i; stage.querySelectorAll('#intents button').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); document.getElementById('modehint').textContent=HINTS[mode]; });
+  document.getElementById('tsend').onclick=()=>{ CANNED[curRoot][mode](); document.getElementById('tinput').value=''; };
+  document.getElementById('tinput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ CANNED[curRoot][mode](); e.target.value=''; }});
+  document.getElementById('modehint').textContent=HINTS[mode];
+  initRoot('text');
+}
+
+/* ---------------- 体験② 溜まった後 ---------------- */
+const QUESTIONS=[
+  {t:['t-dig','深掘り'],q:'あなたのチームの"詰まり"は、情報の非対称のどこで起きてる？',src:'少人数＝速い（記事）'},
+  {t:['t-act','行動'],q:'②情報共有と③権限委譲、今週動かせるのはどっち？',src:'少人数＝速い（記事）'},
+  {t:['t-dig','深掘り'],q:'自社の価格は"コスト基準"と"価値基準"のどっち寄り？',src:'SaaSの値付け3パターン（動画）'},
+  {t:['t-ref','反証'],q:'"値上げが怖い"は、データ？　それとも感覚？',src:'SaaSの値付け3パターン（動画）'},
+  {t:['t-con','接続'],q:'松竹梅の"松"は、どの値付けパターンに当たる？',src:'松が売れない'},
+  {t:['t-act','行動'],q:'委譲できる意思決定の"最小単位"は何？',src:'権限が自分に集中'},
+  {t:['t-exp','拡張'],q:'価格を"成果単位"にしたら、詰まりはどこへ移る？',src:'競合Xが成果課金'}
+];
+const THEMES=[
+  {tt:'意思決定の"詰まり"の正体',short:['詰まりの','正体'],memos:3,qs:7,ans:2,synth:'「人数の少なさ」だと思っていた詰まりは、〈情報の非対称〉と〈権限の集中〉という同じ根の別の顔かもしれない。',pct:29,
+   map:[{label:'少人数=速い',qs:[['t-dig','情報の非対称のどこ？','あなたのチームの"詰まり"は、情報の非対称のどこで起きてる？'],['t-act','今週動かすのは？','②情報共有と③権限委譲、今週動かせるのはどっち？']]},{label:'権限集中',qs:[['t-act','委譲の最小単位？','委譲できる意思決定の"最小単位"は何？']]},{label:'情報の偏り',qs:[['t-con','同じ根では？','情報が特定の人に偏る問題と、意思決定の詰まりは同じ根では？']]}]},
+  {tt:'価値ベースの値付けへ',short:['価値ベース','値付け'],memos:4,qs:9,ans:3,synth:'コスト基準・競合横並びから抜けられていないのが共通項。成果に価格を連動させる筋を、一度きちんと検討する価値がある。',pct:33,
+   map:[{label:'SaaS値付',qs:[['t-dig','コスト/価値？','自社の価格は"コスト基準"と"価値基準"のどっち寄り？'],['t-ref','怖いは感覚？','"値上げが怖い"は、データ？それとも感覚？']]},{label:'松が売れ',qs:[['t-con','どのパターン？','松竹梅の"松"は、どの値付けパターンに当たる？']]},{label:'導入負荷',qs:[['t-exp','値段より負荷？','顧客は値段より導入負荷を気にしている。価格の議論はずれてない？']]},{label:'成果課金',qs:[['t-exp','詰まりはどこへ？','価格を"成果単位"にしたら、詰まりはどこへ移る？']]}]}
+];
+let filter='all';
+function accBody(){ return document.getElementById('abody'); }
+function shelf(){
+  const cats=[['all','すべて'],['t-dig','深掘り'],['t-con','接続'],['t-ref','反証'],['t-act','行動'],['t-exp','拡張']];
+  const list=QUESTIONS.filter(x=>filter==='all'||x.t[0]===filter);
+  accBody().innerHTML=`<div class="h2">問いの棚</div><div class="lead">まだ答えていない問い ${QUESTIONS.length}件。押すと元のスレッドへ。</div>
+    <div class="filters">${cats.map(c=>`<button data-f="${c[0]}" class="${filter===c[0]?'on':''}">${c[1]}</button>`).join('')}</div>
+    ${list.map(x=>`<div class="qrow"><div class="top"><span class="qtag ${x.t[0]}">${x.t[1]}</span><span class="go">&#8250;</span></div><div class="q">${x.q}</div><div class="src">&#128196; ${x.src}</div></div>`).join('')}`;
+  accBody().querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;shelf();});
+}
+function quest(){
+  accBody().innerHTML=`<div class="h2">探究</div><div class="lead">似たメモと問いが束になって立ち上がったテーマ。${THEMES.length}件が育っています。</div>
+    ${THEMES.map((t,i)=>`<div class="theme"><div class="tt">${t.tt}</div>
+      <div class="stat"><span><b>${t.memos}</b> メモ</span><span><b>${t.qs}</b> 問い</span><span>回答 <b>${t.ans}</b>/${t.qs}</span></div>
+      <div class="synth"><span class="l">この束が示唆すること</span>${t.synth}</div>
+      <div class="prog"><i style="width:${t.pct}%"></i></div><div class="pl">探究が ${t.pct}% 進行</div>
+      <button class="open" onclick="openTheme(${i})">この探究を開く（問いの地図で見る）</button></div>`).join('')}`;
+}
+function openTheme(i){
+  const th=THEMES[i], cx=168, cy=176, R1=88, R2=138, Hh=356;
+  let lines='',memoNodes='',qdots='',qlist='',qn=0,n=th.map.length;
+  th.map.forEach((m,mi)=>{
+    const baseDeg=-90+mi*(360/n), a=baseDeg*Math.PI/180, mx=cx+R1*Math.cos(a), my=cy+R1*Math.sin(a);
+    lines+=`<line x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}" stroke="#3a342c" stroke-width="1.4"/>`;
+    memoNodes+=`<circle cx="${mx}" cy="${my}" r="30" fill="#1c1815" stroke="#3a342c" stroke-width="1.4"/><text x="${mx}" y="${my+3}" text-anchor="middle" font-size="9.5" fill="#cfc8ba">${m.label}</text>`;
+    const spread=(m.qs.length-1)*17;
+    m.qs.forEach((q,qi)=>{ qn++; const qa=(baseDeg+(qi*17-spread/2))*Math.PI/180, qx=cx+R2*Math.cos(qa), qy=cy+R2*Math.sin(qa), col=COL[q[0]];
+      lines+=`<line x1="${mx}" y1="${my}" x2="${qx}" y2="${qy}" stroke="${col[0]}" stroke-width="1.2" opacity="0.55"/>`;
+      qdots+=`<circle cx="${qx}" cy="${qy}" r="12" fill="${col[1]}" stroke="${col[0]}" stroke-width="1.3"/><text x="${qx}" y="${qy+3.5}" text-anchor="middle" font-size="10" font-weight="700" fill="${col[0]}">${qn}</text>`;
+      qlist+=`<div class="qrow"><div class="top"><span class="qtag ${q[0]}">${qn}. ${q[1]}</span></div><div class="q">${q[2]}</div></div>`;
+    });
+  });
+  accBody().innerHTML=`<button class="open" style="width:auto;padding:6px 13px;margin-bottom:11px" onclick="quest()">&#8249; 探究にもどる</button>
+    <div class="h2">${th.tt}</div>
+    <div class="theme" style="margin-bottom:12px"><div class="synth"><span class="l">この束が示唆すること</span>${th.synth}</div></div>
+    <div class="lead" style="text-align:center;margin-bottom:4px">問いの地図 — 中心が探究、まわりがメモ、外側が問い</div>
+    <svg viewBox="0 0 336 ${Hh}" style="width:100%;height:auto">${lines}
+      <circle cx="${cx}" cy="${cy}" r="42" fill="#efe8dc"/>
+      <text x="${cx}" y="${cy-3}" text-anchor="middle" font-size="10.5" fill="#1c1815">${th.short[0]}</text>
+      <text x="${cx}" y="${cy+11}" text-anchor="middle" font-size="10.5" fill="#1c1815">${th.short[1]}</text>
+      ${memoNodes}${qdots}</svg>
+    <div class="h2" style="font-size:14px;margin-top:8px">この探究の問い ${qn}</div>
+    <div class="lead">番号は地図の問いと対応。押すと元スレッドへ。</div>${qlist}`;
+  accBody().scrollTop=0;
+}
+function review(){
+  accBody().innerHTML=`<div class="h2">今週のふりかえり</div><div class="lead">7月2日〜7月8日</div>
+    <div class="stats">
+      <div class="stat-c"><div class="n">7</div><div class="l">新しいメモ</div></div>
+      <div class="stat-c"><div class="n">23</div><div class="l">生まれた問い</div></div>
+      <div class="stat-c"><div class="n">5</div><div class="l">答えた問い</div></div>
+      <div class="stat-c"><div class="n">2</div><div class="l">立ち上がった探究</div></div>
+    </div>
+    <div class="block"><div class="bl">今週くり返し出たテーマ</div><div class="bt">「価値ベースの値付け」。3つの別々のメモから、同じ方向の問いが出ています。</div></div>
+    <div class="block"><div class="bl">未回答で、いちばん熱い問い</div><div class="bt">自社は結局、誰の何を"速く"しているのか？</div></div>
+    <div class="recall"><div class="bl">&#8635; 呼び戻し</div><div class="bt">3週間前の問い「"速い"の中身は？」——まだ生きてる？</div></div>
+    <div class="maplink"><div><div class="mt">問いの地図</div><div class="ms">今週の問いのつながりを俯瞰する（副次）</div></div><span style="font-size:18px;color:#4a443b">&#8250;</span></div>`;
+}
+const ACCVIEWS={shelf,quest,review};
+function buildAcc(){
+  filter='all';
+  stage.innerHTML=`
+    <div class="brand"><span class="logo">MONDO</span><span class="sub">問いが増える</span></div>
+    <div class="body" id="abody"></div>
+    <div class="tabbar" id="tabbar">
+      <button data-t="shelf" class="on"><i>&#9776;</i>問いの棚</button>
+      <button data-t="quest"><i>&#10022;</i>探究</button>
+      <button data-t="review"><i>&#8635;</i>ふりかえり</button>
+    </div>`;
+  stage.querySelectorAll('#tabbar button').forEach(b=>b.onclick=()=>{ stage.querySelectorAll('#tabbar button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); accBody().scrollTop=0; ACCVIEWS[b.dataset.t](); });
+  shelf();
+}
+
+/* ---------------- top switch ---------------- */
+const stage=document.getElementById('stage');
+document.querySelectorAll('#appseg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#appseg button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  b.dataset.v==='thread'?buildThread():buildAcc();
+});
+buildThread();
+</script>
+</body>
+</html>

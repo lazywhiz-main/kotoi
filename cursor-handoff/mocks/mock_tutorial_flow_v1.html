@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONDO — チュートリアル流れモック v1</title>
+<style>
+  :root{
+    --bg:#f4f2ec;--ink:#26251f;--sub:#6b6960;--hint:#9a978c;--card:#fff;--line:#e7e4da;
+    --dig:#534AB7;--dig-bg:#EEEDFE;--con:#0F6E56;--con-bg:#E1F5EE;--ref:#993C1D;--ref-bg:#FAECE7;
+    --act:#3B6D11;--act-bg:#EAF3DE;--exp:#0C447C;--exp-bg:#E6F1FB;
+    --warm:#f7f0e2;--warm-line:#e2d4b8;--warm-ink:#6a5428;
+    --accent:#3a3630;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;background:#e9e6de;color:var(--ink);
+       display:flex;flex-direction:column;align-items:center;padding:26px 16px 80px;-webkit-font-smoothing:antialiased}
+  .head{width:100%;max-width:920px;margin-bottom:18px}
+  .head h1{font-size:20px;font-weight:600}
+  .head p{font-size:13.5px;color:var(--sub);margin-top:6px;line-height:1.7}
+  .layout{width:100%;max-width:920px;display:grid;grid-template-columns:1fr 392px;gap:28px;align-items:start}
+  @media(max-width:860px){.layout{grid-template-columns:1fr;justify-items:center}}
+
+  .panel{background:#faf9f5;border:1px solid var(--line);border-radius:18px;padding:18px 18px 16px}
+  .panel h2{font-size:14px;font-weight:600;margin-bottom:10px}
+  .panel .note{font-size:12.5px;color:var(--sub);line-height:1.65;margin-bottom:14px}
+  .flow{display:flex;flex-direction:column;gap:8px}
+  .step{
+    display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;
+    padding:10px 12px;border-radius:12px;border:1px solid transparent;cursor:pointer;text-align:left;
+    background:transparent;font:inherit;color:inherit;
+  }
+  .step:hover{background:#fff;border-color:var(--line)}
+  .step.on{background:#fff;border-color:var(--warm-line);box-shadow:0 1px 0 rgba(0,0,0,.03)}
+  .step .n{width:28px;height:28px;border-radius:50%;background:#efece4;color:var(--sub);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .step.on .n{background:var(--accent);color:#f7f5ef}
+  .step .t{font-size:13.5px;font-weight:600;line-height:1.35}
+  .step .d{font-size:12px;color:var(--sub);margin-top:3px;line-height:1.55}
+  .step .trig{display:inline-block;margin-top:6px;font-size:11px;color:var(--warm-ink);background:var(--warm);border:1px dashed var(--warm-line);padding:2px 8px;border-radius:999px}
+
+  .legend{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--sub);line-height:1.7}
+  .legend b{color:var(--ink);font-weight:600}
+
+  .phone{width:392px;background:#000;border-radius:44px;padding:11px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+  .scr{background:var(--bg);border-radius:34px;overflow:hidden;height:768px;display:flex;flex-direction:column;position:relative}
+  .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#000;border-radius:0 0 16px 16px;z-index:5}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;flex:0 0 auto}
+  .nav{flex:0 0 auto;padding:4px 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}
+  .nav .title{font-size:19px;font-weight:600}
+  .nav .sub{font-size:12px;color:var(--hint)}
+  .nav .info{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);color:var(--hint);display:flex;align-items:center;justify-content:center;font-size:12px;background:#fff}
+  .body{flex:1;overflow-y:auto;padding:14px 16px 18px}.body::-webkit-scrollbar{width:0}
+  .tabbar{flex:0 0 auto;border-top:1px solid var(--line);background:#efece4;display:flex;padding:8px 8px 12px}
+  .tabbar span{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9a978c;font-size:11px}
+  .tabbar span i{font-size:18px;font-style:normal;line-height:1}
+  .tabbar span.on{color:#26251f;font-weight:600}
+
+  /* guide card — worldview: warm paper, not blue SaaS tip */
+  .guide{
+    background:linear-gradient(165deg,#fbf7ee 0%,#f3eee3 100%);
+    border:1px solid var(--warm-line);
+    border-radius:16px;padding:14px 15px 13px;margin-bottom:14px;position:relative;
+  }
+  .guide::before{
+    content:"";position:absolute;left:14px;top:-1px;width:28px;height:3px;border-radius:0 0 3px 3px;
+    background:#c4a574;opacity:.85;
+  }
+  .guide .eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--warm-ink);margin-bottom:7px}
+  .guide .g-title{font-size:15px;font-weight:600;line-height:1.45;margin-bottom:6px}
+  .guide .g-body{font-size:13px;color:var(--sub);line-height:1.65}
+  .guide .g-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+  .guide .btn{
+    font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);
+    background:#fff;color:var(--ink);padding:7px 14px;border-radius:10px;cursor:pointer;
+  }
+  .guide .btn.primary{background:var(--accent);color:#f7f5ef;border-color:var(--accent)}
+
+  .hero-prompt{
+    margin:8px 0 18px;padding:22px 18px 20px;border-radius:18px;
+    background:
+      radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,.55), transparent 55%),
+      linear-gradient(180deg,#f7f4ec,#efe9dc);
+    border:1px solid #e2dccf;text-align:center;
+  }
+  .hero-prompt .mark{font-size:28px;letter-spacing:.12em;font-weight:700;margin-bottom:10px}
+  .hero-prompt .h{font-size:17px;font-weight:600;line-height:1.5;margin-bottom:8px}
+  .hero-prompt .p{font-size:13px;color:var(--sub);line-height:1.65;max-width:280px;margin:0 auto 16px}
+  .hero-prompt .cta{
+    display:inline-block;font:inherit;font-size:14px;font-weight:600;
+    background:var(--accent);color:#f7f5ef;border:0;padding:11px 22px;border-radius:12px;cursor:pointer;
+  }
+
+  .capture{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:14px;
+  }
+  .capture textarea{
+    width:100%;min-height:88px;border:0;resize:none;font:inherit;font-size:16px;line-height:1.55;
+    background:transparent;color:var(--ink);outline:none;
+  }
+  .capture .ph{color:var(--hint)}
+  .capture .row{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+  .capture .hint{font-size:12px;color:var(--hint)}
+  .capture .send{font:inherit;font-size:13px;font-weight:600;background:var(--accent);color:#f7f5ef;border:0;padding:8px 14px;border-radius:10px}
+
+  .memo{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px;margin-bottom:10px}
+  .chip{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;background:#EEEDFE;color:#534AB7;margin-bottom:8px}
+  .memo .raw{font-size:15px;line-height:1.6}
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin-bottom:10px;font-size:13.5px;line-height:1.65;color:var(--sub)}
+  .qcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin-bottom:10px}
+  .qtag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:12px;display:inline-block;margin-bottom:7px}
+  .t-dig{color:var(--dig);background:var(--dig-bg)}.t-con{color:var(--con);background:var(--con-bg)}
+  .t-exp{color:var(--exp);background:var(--exp-bg)}
+  .qcard .q{font-size:14px;line-height:1.6;font-weight:500}
+  .coach{
+    position:relative;margin:0 0 10px;padding:10px 12px;border-radius:12px;
+    background:#fffdf8;border:1px dashed var(--warm-line);font-size:12.5px;color:var(--warm-ink);line-height:1.55;
+  }
+  .coach b{font-weight:700}
+
+  .progress-empty{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 16px;margin-bottom:14px;text-align:center;
+  }
+  .progress-empty .big{font-size:15px;font-weight:600;margin:8px 0 6px;line-height:1.5}
+  .progress-empty .sub{font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:14px}
+  .meter{height:8px;background:#eae7dd;border-radius:8px;overflow:hidden;margin:0 auto 8px;max-width:220px}
+  .meter i{display:block;height:100%;background:#8a8577;border-radius:8px}
+  .meter-lab{font-size:12px;color:var(--hint)}
+
+  .assign{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;
+  }
+  .assign .lead{font-size:14px;font-weight:600;margin-bottom:6px}
+  .assign .desc{font-size:12.5px;color:var(--sub);line-height:1.55;margin-bottom:12px}
+  .assign .cta{
+    width:100%;font:inherit;font-size:14px;font-weight:600;border:0;background:var(--accent);color:#f7f5ef;
+    padding:12px;border-radius:11px;cursor:pointer;
+  }
+
+  .theme{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:12px}
+  .theme .tt{font-size:15px;font-weight:600;margin-bottom:8px}
+  .theme .stat{font-size:11.5px;color:var(--sub);margin-bottom:10px}
+  .theme .synth{background:#f6f4ee;border-left:3px solid #b9b4a6;border-radius:0 8px 8px 0;padding:10px 12px;font-size:13px;line-height:1.65}
+
+  .qrow{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin-bottom:9px}
+  .qrow .q{font-size:13.5px;line-height:1.65;font-weight:500;margin-top:6px}
+  .qrow .src{font-size:11px;color:var(--hint);margin-top:7px}
+
+  .empty-soft{text-align:center;padding:28px 12px;color:var(--sub);font-size:13px;line-height:1.65}
+  .empty-soft .t{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px}
+
+  .scene-label{
+    position:absolute;left:16px;right:16px;bottom:78px;z-index:4;pointer-events:none;
+    font-size:11px;color:var(--hint);text-align:center;opacity:.0;
+  }
+
+  .foot{width:100%;max-width:920px;margin-top:22px;font-size:12.5px;color:var(--sub);line-height:1.75}
+  .foot code{font-size:11.5px;background:#fff;border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>MONDO — チュートリアル流れモック v1</h1>
+    <p>
+      「初めて来た画面で説明する」だけでなく、<b>何が揃ったときに立つか</b>で流れをつくる。
+      左のステップを押すと右の画面が切り替わります。世界観は温かい紙のガイド（青系チップ禁止）。
+    </p>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>流れとトリガー</h2>
+      <p class="note">
+        閾値案: 探究の「溜まった」＝未整理の問い <b>3件以上</b>（実装のクラスタ下限2件より少し厚め。要相談）。
+        強制ツアーはせず、状態に応じた案内だけが自然に重なる。
+      </p>
+      <div class="flow" id="flow"></div>
+      <div class="legend">
+        <b>設計メモ</b><br>
+        · 最初のメモは空状態＋ヒーロー促しで「ちゃんと」誘う<br>
+        · 探究が空のときは説明より「問いを集める」進捗<br>
+        · 3件溜まった初回訪問で、振り分け CTA と意味のチュートリアルを同時に
+      </div>
+    </div>
+
+    <div class="phone"><div class="scr" id="scr">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>●●● ☁︎</span></div>
+      <div class="nav" id="nav"></div>
+      <div class="body" id="body"></div>
+      <div class="tabbar" id="tabbar"></div>
+    </div></div>
+  </div>
+
+  <div class="foot">
+    <p>
+      ファイル: <code>cursor-handoff/mocks/mock_tutorial_flow_v1.html</code> /
+      設計メモ: <code>docs/design-tutorial.md</code>（トリガー流れを追記予定）。
+      次のイテレーション候補: スレッド内コーチマークの動き、振り分け中の待ちコピーとの接続、ふりかえり初回。
+    </p>
+  </div>
+
+<script>
+const THRESHOLD = 3;
+
+const STEPS = [
+  {
+    id: 'home0',
+    title: 'ホーム · まだメモがない',
+    desc: '世界観の着地。最初の一言を残すことを正面から促す。',
+    trig: 'トリガー: オープニング後 / notes=0 でホーム表示',
+  },
+  {
+    id: 'capture',
+    title: '最初のメモを書く',
+    desc: '完璧じゃなくてよい、と安心させつつ保存へ。',
+    trig: 'トリガー: ホームの CTA / ＋ / 入力欄フォーカス（初回）',
+  },
+  {
+    id: 'thread1',
+    title: '育つスレッド（初回）',
+    desc: 'ルートメモ→要約→問いの順を、静かなガイドで示す。',
+    trig: 'トリガー: 初めて note/[id] を開いた（保存直後含む）',
+  },
+  {
+    id: 'shelf0',
+    title: '問いの棚 · まだ薄い',
+    desc: '場所の意味＋「問いが増えるとここに集まる」。',
+    trig: 'トリガー: 棚タブ初回（問い0〜2件でも可）',
+  },
+  {
+    id: 'explore0',
+    title: '探究 · 問いが足りない',
+    desc: '空の説明より「あと何問」で次の行動を示す。',
+    trig: `トリガー: 探究タブ初回 かつ 未整理の問い < ${THRESHOLD}`,
+  },
+  {
+    id: 'exploreReady',
+    title: '探究 · 溜まった（振り分け促し）',
+    desc: '意味のチュートリアルと、振り分け CTA を同じ呼吸で。',
+    trig: `トリガー: 未整理 ≥ ${THRESHOLD} かつ explorations=0 の初回（または振り分け未経験）`,
+  },
+  {
+    id: 'exploreDone',
+    title: '探究 · 束が立ったあと',
+    desc: '一覧の読み方。詳細・見取り図は次の初回へ譲る。',
+    trig: 'トリガー: 振り分け完了後の初回一覧フォーカス',
+  },
+];
+
+const tabs = (on) => `
+  <span class="${on==='home'?'on':''}"><i>○</i>ホーム</span>
+  <span class="${on==='shelf'?'on':''}"><i>☰</i>問いの棚</span>
+  <span class="${on==='explore'?'on':''}"><i>✦</i>探究</span>
+  <span class="${on==='review'?'on':''}"><i>↺</i>ふりかえり</span>
+`;
+
+function guide({eyebrow, title, body, primary='わかった', secondary=null}){
+  return `
+    <div class="guide">
+      <div class="eyebrow">${eyebrow}</div>
+      <div class="g-title">${title}</div>
+      <div class="g-body">${body}</div>
+      <div class="g-actions">
+        ${secondary ? `<button class="btn">${secondary}</button>` : ''}
+        <button class="btn primary">${primary}</button>
+      </div>
+    </div>`;
+}
+
+const SCENES = {
+  home0() {
+    return {
+      nav: `<div class="title">MONDO</div><div class="sub">問いが増える</div>`,
+      tabs: tabs('home'),
+      body: `
+        <div class="hero-prompt">
+          <div class="mark">MONDO</div>
+          <div class="h">最初のメモを、残してみる</div>
+          <div class="p">雑多でいい。リンクでも、途中の考えでも。<br>置くと、問いがそっと返ってきます。</div>
+          <button class="cta" type="button">メモを残す</button>
+        </div>
+        ${guide({
+          eyebrow: 'はじめてのホーム',
+          title: 'ここが入り口です',
+          body: '上の欄（やボタン）からメモを残すと、分類・要約・問いが裏で育ちます。完璧な文章はいりません。',
+          primary: '書いてみる',
+        })}
+        <div class="empty-soft">
+          <div class="t">まだメモがありません</div>
+          最初の一言が、スレッドの根になります。
+        </div>
+      `,
+    };
+  },
+
+  capture() {
+    return {
+      nav: `<div class="title">メモを残す</div><div class="sub"></div>`,
+      tabs: tabs('home'),
+      body: `
+        ${guide({
+          eyebrow: '最初のひと息',
+          title: '考え中のままで大丈夫',
+          body: '保存すると、分類と問いが裏で始まります。いまは「残す」ことだけ。',
+        })}
+        <div class="capture">
+          <textarea placeholder="気になっていること、リンク、走り書き…"></textarea>
+          <div class="row">
+            <span class="hint">誰にも見せない個人ノート</span>
+            <button class="send" type="button">残す</button>
+          </div>
+        </div>
+      `,
+    };
+  },
+
+  thread1() {
+    return {
+      nav: `<div class="title">スレッド</div><div class="sub"></div>`,
+      tabs: tabs('home'),
+      body: `
+        ${guide({
+          eyebrow: '育つスレッド',
+          title: 'メモの下に、問いが伸びます',
+          body: '上からルートメモ → 要約 → 問い。問いに一言を足したり、調べることもできます。',
+        })}
+        <div class="memo">
+          <div class="chip">着想</div>
+          <div class="raw">少人数のチームほど速い、は本当か？ 情報の非対称がボトルネックな気がする。</div>
+        </div>
+        <div class="coach"><b>要約</b> — メモの骨子がここに落ち着きます</div>
+        <div class="summary">少人数＝速い、の前提を疑い、情報共有と権限の偏りに目を向けている。</div>
+        <div class="coach"><b>問い</b> — 類型色は「どんな角度の問いか」の印</div>
+        <div class="qcard">
+          <span class="qtag t-dig">深掘り</span>
+          <div class="q">あなたのチームの“詰まり”は、情報の非対称のどこで起きてる？</div>
+        </div>
+      `,
+    };
+  },
+
+  shelf0() {
+    return {
+      nav: `<div class="title">問いの棚</div><div class="sub"></div>`,
+      tabs: tabs('shelf'),
+      body: `
+        ${guide({
+          eyebrow: '問いの棚',
+          title: 'いま追っている問いだけが並びます',
+          body: 'スレッドで生まれた未回答の問いが、ここに集まります。気になるものを開いて、続きを書いてください。',
+        })}
+        <div class="qrow">
+          <span class="qtag t-dig">深掘り</span>
+          <div class="q">あなたのチームの“詰まり”は、情報の非対称のどこで起きてる？</div>
+          <div class="src">少人数＝速い</div>
+        </div>
+        <div class="empty-soft" style="padding-top:8px">
+          まだ少ないときは、メモをあと数個残すと棚が育ります。
+        </div>
+      `,
+    };
+  },
+
+  explore0() {
+    const have = 1;
+    const need = THRESHOLD;
+    const pct = Math.round((have / need) * 100);
+    return {
+      nav: `<div style="display:flex;align-items:center;gap:6px"><span class="title">探究</span><span class="info">i</span></div><div></div>`,
+      tabs: tabs('explore'),
+      body: `
+        <div class="progress-empty">
+          <div class="eyebrow" style="font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--warm-ink)">まだ束はない</div>
+          <div class="big">問いを ${need} つ以上、育ててください</div>
+          <div class="sub">似たメモと問いが集まったとき、ここから探究の束が立ち上がります。いまは素材を増やす番です。</div>
+          <div class="meter"><i style="width:${pct}%"></i></div>
+          <div class="meter-lab">未整理の問い ${have} / ${need}</div>
+        </div>
+        ${guide({
+          eyebrow: '探究とは',
+          title: 'テーマの束が育つ場所',
+          body: 'ホームでメモを残し、スレッドで問いを増やしてください。数が揃うと、振り分けできるようになります。',
+          primary: 'ホームへ',
+        })}
+      `,
+    };
+  },
+
+  exploreReady() {
+    return {
+      nav: `<div style="display:flex;align-items:center;gap:6px"><span class="title">探究</span><span class="info">i</span></div><div></div>`,
+      tabs: tabs('explore'),
+      body: `
+        ${guide({
+          eyebrow: 'はじめての振り分け',
+          title: '問いが、束になれるところまで来ました',
+          body: '「新しい問いを振り分ける」と、似たテーマの探究が立ち上がります。見取り図はあとから、静かに描けます。',
+          primary: '振り分ける',
+          secondary: 'あとで',
+        })}
+        <div class="assign">
+          <div class="lead">未整理の問いが ${THRESHOLD} 件あります</div>
+          <div class="desc">似たメモと問いを束ねて、探究を見つけます。終わったらお知らせします。</div>
+          <button class="cta" type="button">新しい問いを振り分ける</button>
+        </div>
+        <div class="empty-soft">
+          <div class="t">まだ探究がありません</div>
+          振り分けのあと、ここに束が並びます。
+        </div>
+      `,
+    };
+  },
+
+  exploreDone() {
+    return {
+      nav: `<div style="display:flex;align-items:center;gap:6px"><span class="title">探究</span><span class="info">i</span></div><div></div>`,
+      tabs: tabs('explore'),
+      body: `
+        ${guide({
+          eyebrow: '探究一覧',
+          title: '束を開くと、地図と問いが見えます',
+          body: 'あたらしい問いが増えたら、また振り分けできます。見取り図が古くなったら、更新できます。',
+        })}
+        <div class="theme">
+          <div class="tt">速さの正体</div>
+          <div class="stat">メモ 3 · 問い 5 · 向き合った 1</div>
+          <div class="synth">少人数の速さは人数ではなく、情報と権限の通り方で決まる——という仮説が束ねられている。</div>
+        </div>
+      `,
+    };
+  },
+};
+
+let current = 'home0';
+
+function renderFlow(){
+  const el = document.getElementById('flow');
+  el.innerHTML = STEPS.map((s, i) => `
+    <button type="button" class="step ${s.id===current?'on':''}" data-id="${s.id}">
+      <div class="n">${i+1}</div>
+      <div>
+        <div class="t">${s.title}</div>
+        <div class="d">${s.desc}</div>
+        <span class="trig">${s.trig}</span>
+      </div>
+    </button>
+  `).join('');
+  el.querySelectorAll('.step').forEach(btn => {
+    btn.addEventListener('click', () => {
+      current = btn.dataset.id;
+      render();
+    });
+  });
+}
+
+function render(){
+  renderFlow();
+  const scene = SCENES[current]();
+  document.getElementById('nav').innerHTML = scene.nav;
+  document.getElementById('body').innerHTML = scene.body;
+  document.getElementById('tabbar').innerHTML = scene.tabs;
+}
+
+render();
+</script>
+</body>
+</html>

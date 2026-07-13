@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>メモスレッド（体験①）モック v3 — テキスト/動画ルート</title>
+<style>
+  :root{
+    --bg:#f4f2ec;--ink:#26251f;--sub:#6b6960;--hint:#9a978c;--card:#fff;--line:#e7e4da;
+    --dig:#534AB7;--dig-bg:#EEEDFE;--con:#0F6E56;--con-bg:#E1F5EE;--ref:#993C1D;--ref-bg:#FAECE7;
+    --act:#3B6D11;--act-bg:#EAF3DE;--exp:#0C447C;--exp-bg:#E6F1FB;--you:#8a5a00;--you-bg:#FAEEDA;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;background:#e9e6de;color:var(--ink);
+       display:flex;flex-direction:column;align-items:center;padding:26px 16px 60px;-webkit-font-smoothing:antialiased}
+  .head{width:100%;max-width:640px;margin-bottom:16px}
+  .head h1{font-size:19px;font-weight:600}
+  .head p{font-size:13px;color:var(--sub);margin-top:4px;line-height:1.6}
+  .rootseg{display:inline-flex;background:#ded9cf;border-radius:10px;padding:3px;margin-top:12px}
+  .rootseg button{border:0;background:transparent;font:inherit;font-size:13px;color:#5f5d55;padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500}
+  .rootseg button.on{background:#fff;color:#26251f;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .phone{width:392px;background:#000;border-radius:44px;padding:11px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+  .scr{background:var(--bg);border-radius:34px;overflow:hidden;height:768px;display:flex;flex-direction:column;position:relative}
+  .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#000;border-radius:0 0 16px 16px;z-index:5}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;flex:0 0 auto}
+  .appbar{flex:0 0 auto;padding:4px 18px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+  .appbar .back{font-size:22px;color:#8a887e}.appbar .ttl{font-size:15px;font-weight:600}
+  .appbar .spacer{flex:1}.appbar .dots{color:#9a978c;font-size:18px}
+  .body{flex:1;overflow-y:auto;padding:14px 16px 12px}.body::-webkit-scrollbar{width:0}
+
+  .memo{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px;margin-bottom:6px}
+  .chips{display:flex;gap:6px;margin-bottom:9px}
+  .chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+  .chip.learn{color:#185FA5;background:#E6F1FB}.chip.seed{color:#BA7517;background:#FAEEDA}.chip.vid{color:#712b13;background:#FAECE7}
+  .memo .raw{font-size:14.5px;line-height:1.7}
+  .memo .meta{font-size:11.5px;color:var(--hint);margin-top:9px}
+  .vidcard{display:flex;gap:10px;margin-top:11px;background:#f7f5ef;border-radius:12px;padding:9px;align-items:center}
+  .vidthumb{width:74px;height:50px;border-radius:8px;background:linear-gradient(135deg,#c0392b,#7b241c);flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px}
+  .vidcard .vt{font-size:12.5px;font-weight:600;line-height:1.4}.vidcard .vs{font-size:11px;color:var(--hint);margin-top:3px}
+
+  .rail{margin-left:8px;border-left:2px solid #e0ddd2;padding-left:16px;margin-top:4px}
+  .item{position:relative;margin-bottom:12px}
+  .item:before{content:"";position:absolute;left:-23px;top:6px;width:12px;height:12px;border-radius:50%;background:#cfcbc0;border:2px solid var(--bg)}
+  .item.ai:before{background:#3a3630}.item.you:before{background:var(--you)}.item.work:before{background:#c99a3a}
+  .who{font-size:10.5px;font-weight:700;letter-spacing:.03em;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+  .who .n{color:var(--sub)}
+  .card2{border-radius:13px;padding:11px 13px;font-size:13.5px;line-height:1.7}
+  .ai .card2{background:var(--card);border:1px solid var(--line)}
+  .you .card2{background:var(--you-bg);border:1px solid #efdcb0}
+  .work .card2{background:#fbf6ea;border:1px dashed #d8c48f;color:#6b6960;font-size:12.5px}
+  .qtag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:12px}
+  .t-dig{color:var(--dig);background:var(--dig-bg)}.t-con{color:var(--con);background:var(--con-bg)}
+  .t-ref{color:var(--ref);background:var(--ref-bg)}.t-act{color:var(--act);background:var(--act-bg)}.t-exp{color:var(--exp);background:var(--exp-bg)}
+  .newq{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);font-size:13px;line-height:1.6}
+  .newq .lead{font-size:10.5px;color:var(--hint);font-weight:700;margin-bottom:4px}
+  .rowbtns{display:flex;gap:7px;margin-top:9px}
+  .rowbtns button{font:inherit;font-size:11.5px;border:1px solid var(--line);background:#faf9f5;color:var(--sub);padding:5px 10px;border-radius:9px;cursor:pointer}
+
+  .composer{flex:0 0 auto;border-top:1px solid var(--line);background:#efece4;padding:9px 12px 12px}
+  .intents{display:flex;gap:6px;margin-bottom:8px;overflow-x:auto}
+  .intents button{font:inherit;font-size:12px;font-weight:500;white-space:nowrap;border:1px solid var(--line);background:#fff;color:#54524a;padding:6px 12px;border-radius:20px;cursor:pointer}
+  .intents button.sel{background:#3a3630;color:#f7f5ef;border-color:#3a3630}
+  .inbar{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:22px;padding:5px 5px 5px 14px}
+  .inbar input{flex:1;border:0;font:inherit;font-size:13px;background:transparent;outline:none;color:var(--ink)}
+  .inbar .send{width:34px;height:34px;border-radius:50%;background:#3a3630;color:#fff;border:0;font-size:16px;cursor:pointer;flex:0 0 auto}
+  .modehint{font-size:11px;color:var(--hint);margin:0 0 7px 4px}
+  .foot{width:100%;max-width:640px;margin-top:20px;font-size:12px;color:var(--sub);line-height:1.7}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>メモスレッド（体験①）モック v3</h1>
+    <p>ルートメモが「テキスト」か「動画」かで、最初にぶら下がるものが変わります。下の意図ボタンを選んで送信（↑）でスレッドが伸びます。</p>
+    <div class="rootseg" id="rootseg">
+      <button data-r="text" class="on">テキストをルートに</button>
+      <button data-r="video">動画をルートに</button>
+    </div>
+  </div>
+
+  <div class="phone"><div class="scr">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span>&#9679;&#9679;&#9679; &#128246; &#128267;</span></div>
+    <div class="appbar"><span class="back">&#8249;</span><span class="ttl" id="apptitle">メモ</span><span class="spacer"></span><span class="dots">&#8943;</span></div>
+    <div class="body" id="body">
+      <div id="memoblock"></div>
+      <div class="rail" id="rail"></div>
+    </div>
+    <div class="composer">
+      <div class="modehint" id="modehint"></div>
+      <div class="intents" id="intents">
+        <button data-i="note">＋ 追記</button>
+        <button data-i="ask">AIに質問</button>
+        <button data-i="research" class="sel">調べる</button>
+        <button data-i="dig">深掘り</button>
+      </div>
+      <div class="inbar">
+        <input id="input" placeholder="依頼を書く…（空でも送信でデモが動きます）">
+        <button class="send" id="send">&#8593;</button>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="foot">
+    <p>動画ルートでは、まず〈文字起こし要約〉がぶら下がり、そこから動画の中身に沿った問いが生えます。テキストルートと同じく、依頼→エージェント結果→新しい問い、で育ちます。</p>
+  </div>
+
+<script>
+const ROOTS={
+  text:{
+    title:"メモ",
+    memo:'<div class="memo"><div class="chips"><span class="chip learn">学び</span><span class="chip seed">ひらめき</span></div><div class="raw">「小さいチームほど意思決定が速い」って記事読んだ。でも今のBD案件、人が少なすぎて逆に詰まってる感覚があるんだよな。</div><div class="meta">7月8日 23:14 · テキスト</div></div>',
+    seed:[
+      {cls:'ai',who:'要約',body:'記事の主張は「少人数＝意思決定が速い」。ただし前提に〈メンバーの能力〉〈情報共有〉〈権限委譲〉が隠れている。人数そのものより、これらが揃っているかが効いている可能性。'},
+      {cls:'ai',who:'問い',tag:['t-dig','深掘り'],body:'「速い」の中身は？　決定のスピードと、決定の質を分けて捉えてる？'},
+      {cls:'ai',who:'問い',tag:['t-con','接続'],body:'6/24の『情報が特定の人に偏ってる』メモと、同じ問題を別角度で見ているのでは？',actions:true},
+      {cls:'ai',who:'問い',tag:['t-ref','反証'],body:'本当の変数が〈人数〉でなく〈誰が決めるか〉なら、増員しても速くならない。どっち？',actions:true}
+    ]
+  },
+  video:{
+    title:"動画メモ",
+    memo:'<div class="memo"><div class="chips"><span class="chip vid">動画</span><span class="chip learn">学び</span></div><div class="raw">あとで見る。プロダクトの価格設定の話。</div><div class="vidcard"><div class="vidthumb">&#9654;</div><div><div class="vt">SaaSの値付けを間違える3つのパターン</div><div class="vs">YouTube · 14:32 · 文字起こし取得済み</div></div></div><div class="meta">7月7日 08:02 · 動画リンク</div></div>',
+    seed:[
+      {cls:'ai',who:'文字起こし要約',body:'値付けの典型的な失敗は3つ。①コスト積み上げで決める（顧客価値と無関係）②競合に横並び（差別化を捨てる）③一度決めたら動かさない（値上げを恐れる）。主張は「価格は実験対象であり、定期的に見直す前提で設計せよ」。'},
+      {cls:'ai',who:'問い',tag:['t-dig','深掘り'],body:'3パターンのうち、自社が一番ハマりやすいのはどれ？　それはなぜ？'},
+      {cls:'ai',who:'問い',tag:['t-con','接続'],body:'先週の『松竹梅の"松"が売れない』メモは、この動画のどのパターンに当たる？',actions:true},
+      {cls:'ai',who:'問い',tag:['t-ref','反証'],body:'動画は〈値上げすべき〉前提。値下げで量を取る方が正しい局面は、自社に本当にない？',actions:true}
+    ]
+  }
+};
+const HINTS={note:'「追記」を選択中 — 思ったことをそのまま残せます（AIが接続の問いを返すことも）',ask:'「AIに質問」を選択中 — 疑問に答え、さらに問いを返します',research:'「調べる」を選択中 — 依頼するとエージェントが動いて結果が返ります',dig:'「深掘り」を選択中 — 前提を分解して掘り下げます'};
+
+let curRoot='text', mode='research', seed=[];
+const rail=document.getElementById('rail'), memoblock=document.getElementById('memoblock');
+
+function itemHTML(it){
+  let tag=it.tag?`<span class="qtag ${it.tag[0]}">${it.tag[1]}</span>`:'';
+  let who=it.cls==='you'?'あなた':(it.cls==='work'?'エージェント':(it.who||'問い箱'));
+  let newq=it.newq?`<div class="newq"><div class="lead">↳ ここから生えた新しい問い</div><span class="qtag ${it.newq.t[0]}">${it.newq.t[1]}</span> ${it.newq.q}</div>`:'';
+  let acts=it.actions?`<div class="rowbtns"><button onclick="quick('research')">調べる</button><button onclick="quick('dig')">深掘り</button></div>`:'';
+  return `<div class="item ${it.cls}"><div class="who">${tag}<span class="n">${who}</span></div><div class="card2">${it.body}${newq}${acts}</div></div>`;
+}
+function render(){ rail.innerHTML=seed.map(itemHTML).join(''); }
+function scrollEnd(){ const b=document.getElementById('body'); b.scrollTop=b.scrollHeight; }
+function push(it){ it._id='i'+Math.random().toString(36).slice(2); seed.push(it); render(); scrollEnd(); return it._id; }
+function replace(id,it){ const i=seed.findIndex(x=>x._id===id); it._id=id; seed[i]=it; render(); scrollEnd(); }
+
+const CANNED={
+  text:{
+    note:()=>{ push({cls:'you',body:'たしかに、決定者が自分に集中してる気がする。'}); setTimeout(()=>push({cls:'ai',who:'問い',tag:['t-con','接続'],body:'それは6/24の権限メモと繋がる。委譲できる意思決定の"最小単位"は何？'}),700); },
+    ask:()=>{ push({cls:'you',body:'少人数の弊害って、一般にどう言われてる？'}); setTimeout(()=>push({cls:'ai',who:'回答',body:'よく挙がるのは〈属人化〉〈視点の偏り〉〈一人が詰まると全体が止まる〉の3つ。今の"詰まり"は3つ目に近いかも。',newq:{t:['t-act','行動'],q:'一人が詰まると止まる箇所を、1つ特定して分散できる？'}}),800); },
+    research:()=>{ push({cls:'you',body:'「少人数＝速い」の実証研究があるか調べて。'}); const id=push({cls:'work',body:'調査中… 関連研究とデータを収集しています'}); setTimeout(()=>replace(id,{cls:'work',body:'調べました：チーム規模と意思決定速度の研究では、規模そのものより〈情報の非対称性〉が速度を左右するという知見が複数。小規模でも情報が偏れば遅くなる。',newq:{t:['t-dig','深掘り'],q:'あなたのチームの"詰まり"は、情報の非対称のどこで起きてる？'}}),1100); },
+    dig:()=>{ push({cls:'you',body:'この記事の前提をもっと深掘りして。'}); const id=push({cls:'work',body:'前提を分解しています…'}); setTimeout(()=>replace(id,{cls:'work',body:'前提は3層：①メンバー能力 ②情報共有 ③権限委譲。記事はこれらを満たす前提で速さを語っている。あなたの案件で崩れているのは②③の可能性。',newq:{t:['t-act','行動'],q:'②情報共有と③権限委譲、今週動かせるのはどっち？'}}),1100); }
+  },
+  video:{
+    note:()=>{ push({cls:'you',body:'うち、価格を1年変えてないな…'}); setTimeout(()=>push({cls:'ai',who:'問い',tag:['t-con','接続'],body:'それは③据え置きパターンそのもの。据え置き中に、提供価値やコストは動いてない？'}),700); },
+    ask:()=>{ push({cls:'you',body:'SaaSの値付けで一番多い失敗は？'}); setTimeout(()=>push({cls:'ai',who:'回答',body:'「据え置き（改定しない）」が最多と言われる。値上げ＝悪という思い込みが背景。',newq:{t:['t-ref','反証'],q:'あなたの"値上げが怖い"は、データ？　それとも感覚？'}}),800); },
+    research:()=>{ push({cls:'you',body:'値上げで解約を増やさなかった事例を調べて。'}); const id=push({cls:'work',body:'調査中… 価格改定の事例を収集しています'}); setTimeout(()=>replace(id,{cls:'work',body:'調べました：機能別課金から〈成果別課金〉へ移行し、解約率を上げずにARPUを上げた事例が複数。鍵は「顧客が得た価値と価格を連動させた」こと。',newq:{t:['t-dig','深掘り'],q:'自社の価格は"コスト基準"と"価値基準"のどっち寄り？'}}),1100); },
+    dig:()=>{ push({cls:'you',body:'3パターンを自社に当てはめて具体化して。'}); const id=push({cls:'work',body:'3パターンを分解しています…'}); setTimeout(()=>replace(id,{cls:'work',body:'①コスト積み上げ＝原価＋利益率で決める ②競合横並び＝相場に合わせる ③据え置き＝改定を避ける。自社は②と③が混在の可能性。',newq:{t:['t-act','行動'],q:'②競合横並びから抜けるなら、自社独自の価値を1つ言語化する？'}}),1100); }
+  }
+};
+
+function initRoot(k){
+  curRoot=k; seed=JSON.parse(JSON.stringify(ROOTS[k].seed));
+  memoblock.innerHTML=ROOTS[k].memo;
+  document.getElementById('apptitle').textContent=ROOTS[k].title;
+  render(); document.getElementById('body').scrollTop=0;
+}
+function quick(m){ CANNED[curRoot][m](); }
+
+document.querySelectorAll('#rootseg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#rootseg button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); initRoot(b.dataset.r);
+});
+document.querySelectorAll('#intents button').forEach(b=>b.onclick=()=>{
+  mode=b.dataset.i; document.querySelectorAll('#intents button').forEach(x=>x.classList.remove('sel')); b.classList.add('sel');
+  document.getElementById('modehint').textContent=HINTS[mode];
+});
+document.getElementById('send').onclick=()=>{ CANNED[curRoot][mode](); document.getElementById('input').value=''; };
+document.getElementById('input').addEventListener('keydown',e=>{ if(e.key==='Enter'){ CANNED[curRoot][mode](); e.target.value=''; }});
+
+document.getElementById('modehint').textContent=HINTS[mode];
+initRoot('text');
+</script>
+</body>
+</html>

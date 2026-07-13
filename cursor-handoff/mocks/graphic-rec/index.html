@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>探究グラレコ — フィージビリティ</title>
+  <link rel="stylesheet" href="/shared.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>探究グラレコ — フィージビリティ</h1>
+        <p><code>npm run mock:graphic-rec</code> で起動 → 画像 AI 実験でプロンプトと生成を試します。</p>
+      </div>
+      <div id="health" class="status">接続確認中…</div>
+    </div>
+
+    <div class="hub-cards" style="grid-template-columns: 1fr;">
+      <div class="hub-card">
+        <h3>画像 AI 実験</h3>
+        <p>探究データから Claude が<strong>日本語プロンプト</strong>4種 → DALL·E 3 で生成。構図バランス重視・子供のクレパス手書き風。</p>
+        <p><span class="tag ok">推奨 1:1（1024²）</span> <span class="tag">9:16 も比較可</span></p>
+        <a href="/image-feasibility.html">画像実験を開く →</a>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px">
+      <div class="panel-h">画像サイズ規格</div>
+      <div class="panel-b note-box">
+        <strong>推奨（生成）</strong> — <code>1024×1024</code>（1:1 正方形）<br>
+        構図バランスが取りやすい。中心に主題、周囲に小要素、余白あり。<br><br>
+        <strong>比較用</strong> — <code>1024×1792</code>（9:16 縦）<br>
+        上中下3層配置。縦スリープは避ける。<br><br>
+        <strong>プロンプトの要点</strong><br>
+        ・<strong>トーン</strong>＝子供のクレヨン（線・色・字）。内容の解像度は落とさない<br>
+        ・手書き日本語ラベル・矢印・場面は積極的に<br>
+        ・禁止するのは「上手い絵」の質感だけ（ビジネスイラスト等）<br><br>
+        <strong>ChatGPT 手動生成</strong><br>
+        「子供のクレヨン手書き、手書き日本語ラベルあり、探究の内容を豊かに描く」を足す。
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <div class="panel-h">環境</div>
+      <div class="panel-b note-box">
+        <strong>.env</strong><br>
+        <code>ANTHROPIC_API_KEY</code> — プロンプト生成（必須）<br>
+        <code>OPENAI_API_KEY</code> — 画像生成（任意）<br>
+        <code>GRAPHIC_REC_IMAGE_SIZE</code> — 省略時 <code>1024x1024</code>（UI でも切替可）
+      </div>
+    </div>
+
+    <details class="panel" style="margin-top:12px">
+      <div class="panel-h" style="cursor:pointer">旧モック（参考外）</div>
+      <div class="panel-b note-box">
+        初回の技術検証用。体験としては不十分なため非推奨。<br>
+        <a href="/pattern-a.html">旧 A</a> ·
+        <a href="/pattern-b.html">旧 B</a> ·
+        <a href="/pattern-c.html">旧 C</a> ·
+        <a href="/reference.html">手作り参照（使わない）</a>
+      </div>
+    </details>
+  </div>
+
+  <script type="module">
+    import { checkHealth } from '/shared.js';
+    const el = document.getElementById('health');
+    try {
+      const h = await checkHealth();
+      el.className = 'status ' + (h.anthropic ? 'ok' : 'err');
+      el.textContent = h.anthropic
+        ? `API OK · ${h.model}${h.openai ? ' · OpenAIあり' : ''} · ${h.imageSize ?? '1024x1024'}`
+        : 'ANTHROPIC_API_KEY 未設定';
+    } catch {
+      el.className = 'status err';
+      el.textContent = 'npm run mock:graphic-rec で起動';
+    }
+  </script>
+</body>
+</html>

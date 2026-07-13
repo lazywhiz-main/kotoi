@@ -1,0 +1,30 @@
+# MONDO — Cursor rules
+
+## プロダクト
+MONDO: 雑多メモを分類・要約・調査し、「次の問い」を返す個人用ノート。核は問いの生成。詳細は cursor-handoff/01〜06 と mocks/mock_*.html を参照。
+
+## スタック / 規約
+- Expo (React Native) + expo-router + TypeScript(strict)。関数コンポーネント + hooks。
+- Supabase: supabase-js。DBは cursor-handoff/03_data-model.sql が正。型は lib/types.ts（同梱 types.ts）が正。スキーマと型は常に一致させる。
+- AIと外部取得は必ず Supabase Edge Functions 経由。**Anthropic APIキーや service_role キーをクライアントに絶対に置かない**。クライアントは anon key のみ。
+- 秘密情報はenvへ。ハードコード禁止。
+
+## AI
+- プロンプトは cursor-handoff/04_ai-prompts.md に従う。lib/prompts/ に独立管理しバージョンを付す。
+- AI出力は必ずJSON。Zodで検証してから保存。検証失敗はリトライ or エラー扱い。
+- 問いは5類型 enum（dig/con/ref/act/exp）に必ず紐づく。汎用的で当たり障りのない問いを生成しない。
+- task typeは問いを作らない。feeling typeは分析・反証せず、振り返りの軽い問いのみ。
+
+## UI / コピー
+- 日本語。語彙を統一: ルートメモ／育つスレッド／問い（深掘り・接続・反証・行動・拡張）／追記・質問・調べる・深掘り／問いの棚／探究／問いの地図／見取り図／今週のふりかえり／呼び戻し。見取り図の**保存**（端末）と**投稿**（外のSNS）は別。「アプリ内シェア」とは言わない。
+- 類型の表示名: dig=深掘り, con=接続, ref=反証, act=行動, exp=拡張。色は mock_*.html のCSS変数に合わせる。
+- トーンは温かく静か、フラット、余白多め。挙動と見た目は mocks/mock_*.html を真実とする。
+
+## データ / セキュリティ
+- 全テーブルに user_id、RLSで本人のみ。単一ユーザーでも将来のマルチユーザーに備える。
+- 重い処理（research/deepdive/長尺動画）は承認制＋usage_ledgerで日次コスト上限。自動は軽処理のみ。
+- 長時間処理は thread_items.status='pending' を先に作り、完了でupdate。クライアントは再フェッチ or realtime。
+
+## 進め方
+- cursor-handoff/06_build-roadmap.md の M0→M5 の順。まず動く縦串（Capture→分類→要約→問い）を通す。
+- 各機能は小さく出し、実データで問いの質を確認しながら進める。

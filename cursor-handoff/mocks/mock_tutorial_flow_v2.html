@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONDO — チュートリアル流れモック v2（現行UI固定）</title>
+<style>
+  /* 下地トークン = lib/theme.ts light に合わせる。チュートリアル層以外で新色を足さない */
+  :root{
+    --bg:#f4f2ec;--ink:#26251f;--sub:#6b6960;--hint:#9a978c;--card:#fff;--line:#e7e4da;
+    --lineStrong:#d4d0c4;--input:#f7f5ef;--accent:#3a3630;--onAccent:#f7f5ef;
+    --dig:#534AB7;--dig-bg:#EEEDFE;
+    --warm-line:#e2d4b8;--warm-ink:#6a5428;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;background:#e9e6de;color:var(--ink);
+       display:flex;flex-direction:column;align-items:center;padding:26px 16px 80px;-webkit-font-smoothing:antialiased}
+  .head{width:100%;max-width:920px;margin-bottom:16px}
+  .head h1{font-size:20px;font-weight:600}
+  .head p{font-size:13.5px;color:var(--sub);margin-top:6px;line-height:1.7}
+  .rule{
+    margin-top:10px;padding:12px 14px;border-radius:12px;background:#fff8f0;border:1px solid #e8d4b0;
+    font-size:13px;line-height:1.65;color:#5c4a2e;
+  }
+  .rule b{font-weight:700}
+  .layout{width:100%;max-width:920px;display:grid;grid-template-columns:1fr 392px;gap:28px;align-items:start}
+  @media(max-width:860px){.layout{grid-template-columns:1fr;justify-items:center}}
+
+  .panel{background:#faf9f5;border:1px solid var(--line);border-radius:18px;padding:18px}
+  .panel h2{font-size:14px;font-weight:600;margin-bottom:10px}
+  .panel .note{font-size:12.5px;color:var(--sub);line-height:1.65;margin-bottom:14px}
+  .flow{display:flex;flex-direction:column;gap:8px}
+  .step{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid transparent;cursor:pointer;text-align:left;background:transparent;font:inherit;color:inherit}
+  .step:hover{background:#fff;border-color:var(--line)}
+  .step.on{background:#fff;border-color:var(--warm-line)}
+  .step .n{width:28px;height:28px;border-radius:50%;background:#efece4;color:var(--sub);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .step.on .n{background:var(--accent);color:#f7f5ef}
+  .step .t{font-size:13.5px;font-weight:600}
+  .step .d{font-size:12px;color:var(--sub);margin-top:3px;line-height:1.55}
+  .step .layer{display:inline-block;margin-top:6px;font-size:11px;color:#5c4a2e;background:#fff8f0;border:1px solid #e8d4b0;padding:2px 8px;border-radius:999px}
+  .legend{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--sub);line-height:1.7}
+
+  .phone{width:392px;background:#000;border-radius:44px;padding:11px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+  .scr{background:var(--bg);border-radius:34px;overflow:hidden;height:768px;display:flex;flex-direction:column;position:relative}
+  .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#000;border-radius:0 0 16px 16px;z-index:20}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600}
+  .nav{padding:4px 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;min-height:44px}
+  .nav .title{font-size:19px;font-weight:600}
+  .nav .info{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);color:var(--hint);display:inline-flex;align-items:center;justify-content:center;font-size:12px;background:#fff;margin-left:6px}
+  .body{flex:1;overflow-y:auto;padding:8px 16px 18px}.body::-webkit-scrollbar{width:0}
+  .tabbar{border-top:1px solid var(--line);background:#efece4;display:flex;padding:8px 8px 12px}
+  .tabbar span{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9a978c;font-size:11px}
+  .tabbar span i{font-size:18px;font-style:normal}
+  .tabbar span.on{color:#26251f;font-weight:600}
+  .tabbar span.tut-pulse{animation:tutPulse 1.8s ease-in-out infinite;color:var(--ink)}
+
+  /* —— 現行 CaptureComposer 模写 —— */
+  .composer{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:16px}
+  .composer.emphasized{border-color:var(--lineStrong);border-width:1.5px}
+  .composer .label{color:var(--sub);font-size:14px;font-weight:600;margin-bottom:4px}
+  .composer .subhint{color:var(--hint);font-size:15px;line-height:20px;margin-bottom:8px}
+  .composer .inputRow{display:flex;align-items:flex-end;gap:8px}
+  .composer .input{
+    flex:1;min-height:44px;max-height:120px;background:var(--input);border:1px solid var(--line);
+    border-radius:14px;padding:10px 14px;font:inherit;font-size:17px;line-height:24px;color:var(--ink);
+  }
+  .composer.emphasized .input{border-color:var(--lineStrong);border-radius:22px}
+  .composer .send{
+    width:40px;height:40px;border-radius:20px;background:var(--accent);color:var(--onAccent);
+    border:0;font-size:19px;font-weight:600;display:flex;align-items:center;justify-content:center;
+  }
+  .composer .footHint{color:var(--hint);font-size:15px;line-height:20px;margin-top:8px}
+
+  /* —— 現行 EmptyState 模写 —— */
+  .empty{padding:48px 28px;text-align:center}
+  .empty .et{font-size:19px;font-weight:600;margin-bottom:8px}
+  .empty .ed{font-size:15px;line-height:24px;color:var(--sub)}
+
+  /* —— 現行 探究 assign 模写 —— */
+  .assignBlock{margin-bottom:14px}
+  .assignHintMuted{color:var(--hint);font-size:13px;line-height:19px;margin-bottom:14px}
+  .assignHint{color:var(--sub);font-size:13px;line-height:19px;margin-top:8px}
+  .updateBtn{
+    display:inline-flex;align-items:center;justify-content:center;min-height:36px;
+    padding:8px 14px;border-radius:10px;background:var(--accent);color:#f7f5ef;
+    font:inherit;font-size:15px;font-weight:600;border:0;
+  }
+
+  /* —— スレッド下地（簡易・現行トーン） —— */
+  .memo{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px;margin-bottom:10px}
+  .chip{display:inline-block;font-size:13px;font-weight:600;padding:3px 9px;border-radius:20px;background:#EEEDFE;color:#534AB7;margin-bottom:8px}
+  .memo .raw{font-size:17px;line-height:26px}
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin-bottom:10px;font-size:15px;line-height:24px;color:var(--sub)}
+  .qcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin-bottom:10px}
+  .qtag{font-size:13px;font-weight:600;padding:3px 9px;border-radius:20px;display:inline-block;margin-bottom:8px;color:var(--dig);background:var(--dig-bg)}
+  .qcard .q{font-size:16px;line-height:24px}
+
+  .theme{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px}
+  .theme .tt{font-size:15px;font-weight:600;margin-bottom:8px}
+  .theme .stat{font-size:13px;color:var(--sub);margin-bottom:10px}
+  .theme .synth{background:#f6f4ee;border-left:3px solid #b9b4a6;border-radius:0 8px 8px 0;padding:10px 12px;font-size:13px;line-height:1.65}
+
+  /* —— チュートリアル層のみ（ここ以外に新UIを足さない） —— */
+  @keyframes tutPulse{0%,100%{opacity:1}50%{opacity:.72}}
+  .tut-ring{box-shadow:0 0 0 3px rgba(58,54,48,.18);animation:tutPulse 1.8s ease-in-out infinite}
+  .tut-whisper{
+    position:absolute;z-index:12;pointer-events:none;
+    background:rgba(255,252,245,.96);border:1px solid var(--warm-line);
+    color:var(--warm-ink);font-size:13px;font-weight:600;line-height:1.35;
+    padding:8px 11px;border-radius:12px;max-width:200px;
+  }
+  .tut-whisper .a{display:block;font-size:11px;font-weight:500;opacity:.75;margin-top:2px}
+  .tut-mark{
+    font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--hint);
+    margin:0 0 4px 2px;
+  }
+  .tut-progress{
+    text-align:center;color:var(--hint);font-size:13px;margin-top:12px;letter-spacing:.02em;
+  }
+  .tut-progress b{color:var(--ink);font-size:22px;font-weight:600}
+
+  .foot{width:100%;max-width:920px;margin-top:20px;font-size:12.5px;color:var(--sub);line-height:1.75}
+  .foot code{font-size:11.5px;background:#fff;border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>MONDO — チュートリアル流れモック v2</h1>
+    <p>読ませない案内 ＋ <b>下地は現行アプリのまま</b>。チュートリアルはリング・囁き・短い印・タブ脈動だけ。</p>
+    <div class="rule">
+      <b>絶対ルール:</b> チュートリアルとして追加・強調する要素以外は、いまのアプリデザインを崩さない。
+      ギャップがあればチュートリアル側をアプリに合わせる。
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>シーン</h2>
+      <p class="note">各ステップの「追加層」だけがチュートリアル。下地コンポーネントは CaptureComposer / EmptyState / 振り分けボタン等の模写。</p>
+      <div class="flow" id="flow"></div>
+      <div class="legend">
+        既存の <code>emphasized</code>（「ここからはじめよう」）も下地として使う。<br>
+        説明カード・別系統ヒーロー・独自ステージ UI は置かない。
+      </div>
+    </div>
+
+    <div class="phone"><div class="scr">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav" id="nav"></div>
+      <div class="body" id="body"></div>
+      <div class="tabbar" id="tabbar"></div>
+      <div id="overlay"></div>
+    </div></div>
+  </div>
+
+  <div class="foot">
+    <p><code>mock_tutorial_flow_v2.html</code> · 設計 <code>docs/design-tutorial.md</code> §0</p>
+  </div>
+
+<script>
+const N = 3;
+const STEPS = [
+  { id:'home0', title:'ホーム · メモ0', d:'下地: CaptureComposer emphasized', layer:'追加: 囁き「最初のメモを、ここに」' },
+  { id:'capture', title:'残す直前', d:'下地: 同じ composer', layer:'追加: ↑ に囁き' },
+  { id:'thread1', title:'スレッド', d:'下地: 既存カード見た目', layer:'追加: 「要約」「問い」印のみ' },
+  { id:'shelfHint', title:'棚へ誘導', d:'下地: ホームのまま', layer:'追加: 棚タブ脈動＋一言' },
+  { id:'explore0', title:'探究 · 不足', d:'下地: EmptyState ＋ 既存ヒント', layer:'追加: 進捗数字だけ' },
+  { id:'exploreReady', title:'振り分け可', d:'下地: 既存 updateBtn', layer:'追加: リング＋一言' },
+  { id:'exploreDone', title:'束のあと', d:'下地: ExplorationCard 調', layer:'追加: リング＋「開いてみる」' },
+];
+
+let current = 'home0';
+const tabs = (on, pulse) => `
+  <span class="${on==='home'?'on':''}"><i>○</i>ホーム</span>
+  <span class="${on==='shelf'?'on':''} ${pulse==='shelf'?'tut-pulse':''}"><i>☰</i>問いの棚</span>
+  <span class="${on==='explore'?'on':''} ${pulse==='explore'?'tut-pulse':''}"><i>✦</i>探究</span>
+  <span class="${on==='review'?'on':''}"><i>↺</i>ふりかえり</span>
+`;
+
+const SCENES = {
+  home0: () => ({
+    nav: `<div class="title">MONDO</div>`,
+    tabs: tabs('home'),
+    body: `
+      <div class="composer emphasized tut-ring">
+        <div class="label">ここからはじめよう</div>
+        <div class="subhint">メモも、動画リンクも。</div>
+        <div class="inputRow">
+          <div class="input" style="color:var(--hint)">いま、何が気になってる？</div>
+          <button class="send" type="button">↑</button>
+        </div>
+        <div class="footHint">保存後、分類・要約・問いが裏で進みます。</div>
+      </div>
+      <div class="empty">
+        <div class="et">まだメモがありません</div>
+        <div class="ed">上の欄に雑多に放り込むと、AIが分類して問いを返します。</div>
+      </div>
+    `,
+    overlay: `<div class="tut-whisper" style="top:210px;left:36px">最初のメモを、ここに</div>`,
+  }),
+
+  capture: () => ({
+    nav: `<div class="title">MONDO</div>`,
+    tabs: tabs('home'),
+    body: `
+      <div class="composer emphasized">
+        <div class="label">ここからはじめよう</div>
+        <div class="subhint">メモも、動画リンクも。</div>
+        <div class="inputRow">
+          <div class="input">少人数のチームほど速い、は本当か？</div>
+          <button class="send tut-ring" type="button">↑</button>
+        </div>
+        <div class="footHint">保存後、分類・要約・問いが裏で進みます。</div>
+      </div>
+    `,
+    overlay: `<div class="tut-whisper" style="top:168px;right:28px">これで大丈夫<span class="a">→ 残す</span></div>`,
+  }),
+
+  thread1: () => ({
+    nav: `<div class="title">スレッド</div>`,
+    tabs: tabs('home'),
+    body: `
+      <div class="memo">
+        <div class="chip">着想</div>
+        <div class="raw">少人数のチームほど速い、は本当か？ 情報の非対称がボトルネックな気がする。</div>
+      </div>
+      <div class="tut-mark">要約</div>
+      <div class="summary">少人数＝速い、の前提を疑い、情報共有と権限の偏りに目を向けている。</div>
+      <div class="tut-mark">問い</div>
+      <div class="qcard">
+        <span class="qtag">深掘り</span>
+        <div class="q">あなたのチームの“詰まり”は、情報の非対称のどこで起きてる？</div>
+      </div>
+    `,
+    overlay: ``,
+  }),
+
+  shelfHint: () => ({
+    nav: `<div class="title">MONDO</div>`,
+    tabs: tabs('home', 'shelf'),
+    body: `
+      <div class="composer">
+        <div class="label">放り込む</div>
+        <div class="subhint">メモも、動画リンクも。</div>
+        <div class="inputRow">
+          <div class="input" style="color:var(--hint)">いま、何が気になってる？</div>
+          <button class="send" type="button">↑</button>
+        </div>
+        <div class="footHint">保存後、分類・要約・問いが裏で進みます。</div>
+      </div>
+    `,
+    overlay: `<div class="tut-whisper" style="bottom:96px;left:42%">問いは、ここに集まる<span class="a">↓ 問いの棚</span></div>`,
+  }),
+
+  explore0: () => ({
+    nav: `<div><span class="title">探究</span><span class="info">i</span></div>`,
+    tabs: tabs('explore'),
+    body: `
+      <div class="assignHintMuted">問いが2件以上溜まると、ここから探究の束をつくれます。</div>
+      <div class="empty">
+        <div class="et">まだ探究がありません</div>
+        <div class="ed">メモと問いが溜まったら「新しい問いを振り分ける」で、似たテーマの束を見つけます。</div>
+      </div>
+      <div class="tut-progress"><b>1</b> / ${N} 問い</div>
+    `,
+    overlay: ``,
+  }),
+
+  exploreReady: () => ({
+    nav: `<div><span class="title">探究</span><span class="info">i</span></div>`,
+    tabs: tabs('explore'),
+    body: `
+      <div class="assignBlock">
+        <button class="updateBtn tut-ring" type="button">新しい問いを振り分ける</button>
+        <div class="assignHint">未整理の問いが ${N} 件あります。似たテーマの束を見つけます。</div>
+      </div>
+      <div class="empty">
+        <div class="et">まだ探究がありません</div>
+        <div class="ed">メモと問いが溜まったら「新しい問いを振り分ける」で、似たテーマの束を見つけます。</div>
+      </div>
+    `,
+    overlay: `<div class="tut-whisper" style="top:118px;left:28px">似た問いを、束ねる</div>`,
+  }),
+
+  exploreDone: () => ({
+    nav: `<div><span class="title">探究</span><span class="info">i</span></div>`,
+    tabs: tabs('explore'),
+    body: `
+      <div class="assignBlock">
+        <div style="color:var(--hint);font-size:14px;font-weight:500;margin-bottom:10px">探究は最新です</div>
+      </div>
+      <div class="theme tut-ring">
+        <div class="tt">速さの正体</div>
+        <div class="stat">メモ 3 · 問い 5</div>
+        <div class="synth">少人数の速さは、情報と権限の通り方で決まる。</div>
+      </div>
+    `,
+    overlay: `<div class="tut-whisper" style="top:300px;left:36px">開いてみる</div>`,
+  }),
+};
+
+function render(){
+  const el = document.getElementById('flow');
+  el.innerHTML = STEPS.map((s,i)=>`
+    <button type="button" class="step ${s.id===current?'on':''}" data-id="${s.id}">
+      <div class="n">${i+1}</div>
+      <div>
+        <div class="t">${s.title}</div>
+        <div class="d">${s.d}</div>
+        <span class="layer">${s.layer}</span>
+      </div>
+    </button>`).join('');
+  el.querySelectorAll('.step').forEach(b=>b.addEventListener('click',()=>{current=b.dataset.id;render();}));
+  const scene = SCENES[current]();
+  document.getElementById('nav').innerHTML = scene.nav;
+  document.getElementById('body').innerHTML = scene.body;
+  document.getElementById('tabbar').innerHTML = scene.tabs;
+  document.getElementById('overlay').innerHTML = scene.overlay || '';
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>パターン C — 問いの地図拡張</title>
+  <link rel="stylesheet" href="/shared.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>パターン C — 問いの地図拡張</h1>
+        <p>既存 QuestionMap の延長。付箋ハブ・波線・類型色。構造ナビ向き。</p>
+      </div>
+      <nav class="nav">
+        <a href="/">一覧</a>
+        <a href="/pattern-a.html">A 画像</a>
+        <a href="/pattern-b.html">B 構造化</a>
+        <span class="on">C 地図</span>
+      </nav>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-h">
+          <span>問いの地図（装飾付き）</span>
+          <span id="timing" class="status"></span>
+        </div>
+        <div class="panel-b">
+          <div class="controls">
+            <select id="sample">
+              <option value="work_body">働き方と身体の境界</option>
+              <option value="child_learning">子どもの学びと自分の焦り</option>
+            </select>
+            <button id="generate">AI で生成</button>
+            <button id="clear" class="ghost">クリア</button>
+          </div>
+          <div id="status" class="status">番号付き問いノードをクリック → 問い本文を表示。</div>
+          <div id="pick" class="status" style="margin-top:6px"></div>
+          <div class="canvas-wrap empty" id="canvas">生成結果がここに表示されます</div>
+          <div class="note-box" style="margin-top:10px">
+            <strong>現行アプリとの関係</strong>
+            `components/QuestionMap.tsx` の SVG 放射図に、付箋スタイルと AI 配置 JSON を足すイメージ。
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">AI 出力・所感</div>
+        <div class="panel-b meta-list">
+          <div class="note-box">
+            <strong>このパターンの想定</strong>
+            実装コスト最小。ただし「グラレコの一枚絵感」は B より弱い。地図＝ナビ、グラレコ＝統合、の併用向き。
+          </div>
+          <ul class="pros-cons" id="pros-cons"></ul>
+          <pre class="json-out" id="json">{}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getExploration, generatePattern, TYPE_COLORS } from '/shared.js';
+    import { renderMapCanvas } from '/render-c.js';
+
+    const canvas = document.getElementById('canvas');
+    const status = document.getElementById('status');
+    const pick = document.getElementById('pick');
+    const jsonEl = document.getElementById('json');
+    const prosCons = document.getElementById('pros-cons');
+    const timing = document.getElementById('timing');
+    const sample = document.getElementById('sample');
+    const btn = document.getElementById('generate');
+    let exploration = getExploration('work_body');
+
+    document.getElementById('clear').onclick = () => {
+      canvas.innerHTML = '生成結果がここに表示されます';
+      canvas.className = 'canvas-wrap empty';
+      jsonEl.textContent = '{}';
+      prosCons.innerHTML = '';
+      pick.textContent = '';
+      timing.textContent = '';
+    };
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      status.className = 'status';
+      status.textContent = 'Claude が地図レイアウト JSON を生成中…';
+      pick.textContent = '';
+      const t0 = performance.now();
+      try {
+        exploration = getExploration(sample.value);
+        const result = await generatePattern('C', exploration);
+        const spec = result.spec;
+        jsonEl.textContent = JSON.stringify(spec, null, 2);
+
+        prosCons.innerHTML = [
+          ...(spec.strengths ?? []).map((s) => `<li><span class="tag ok">強み</span> ${s}</li>`),
+          ...(spec.limitations ?? []).map((s) => `<li><span class="tag warn">制限</span> ${s}</li>`),
+        ].join('');
+
+        renderMapCanvas(canvas, spec, exploration, (q) => {
+          const tc = TYPE_COLORS[q.question_type];
+          pick.innerHTML = `<span class="leg-type-${q.question_type}">${tc?.label ?? ''}</span> ${q.body}`;
+        });
+
+        const hubCount = spec.hubs?.length ?? 0;
+        const qCount = (spec.hubs ?? []).reduce((n, h) => n + (h.questions?.length ?? 0), 0);
+        const sec = ((performance.now() - t0) / 1000).toFixed(1);
+        timing.textContent = `${sec}s`;
+        status.className = 'status ok';
+        status.textContent = `hubs ${hubCount} · questions ${qCount}`;
+      } catch (err) {
+        status.className = 'status err';
+        status.textContent = err.message ?? String(err);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

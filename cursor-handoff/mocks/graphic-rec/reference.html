@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>参照 — 手作りグラレコ（品質基準）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Hachi+Maru+Pop&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared.css">
+  <style>
+    .ref-head { max-width: 720px; margin-bottom: 16px; }
+    .ref-head h1 { font-size: 18px; }
+    .ref-head p { font-size: 13px; color: var(--sub); line-height: 1.65; margin-top: 6px; }
+
+    .phone {
+      width: 392px;
+      margin: 0 auto;
+      background: #000;
+      border-radius: 44px;
+      padding: 11px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.55);
+    }
+    .scr {
+      background: #151210;
+      border-radius: 34px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 820px;
+    }
+    .appbar {
+      padding: 48px 16px 10px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .appbar .back { color: var(--hint); font-size: 20px; }
+    .appbar .ttl { font-size: 14px; font-weight: 600; color: var(--ink); }
+    .appbar .sub { font-size: 11px; color: var(--hint); margin-left: auto; }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .tabs button {
+      flex: 1;
+      font: inherit;
+      font-size: 11px;
+      padding: 7px 4px;
+      border-radius: 8px;
+      border: 1px solid var(--line2);
+      background: var(--card);
+      color: var(--sub);
+      cursor: pointer;
+    }
+    .tabs button.on {
+      background: var(--ink);
+      color: #1c1815;
+      border-color: var(--ink);
+      font-weight: 600;
+    }
+
+    .scroll {
+      overflow-y: auto;
+      flex: 1;
+      padding: 12px;
+    }
+    .scroll::-webkit-scrollbar { width: 0; }
+
+    /* 画用紙 + クレパス感 */
+    .gr-paper {
+      background: #f0ebe0;
+      background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"),
+        radial-gradient(circle at 30% 20%, rgba(255,200,120,0.14) 0%, transparent 50%),
+        linear-gradient(175deg, #f7f2e8 0%, #e8e0d0 100%);
+      border-radius: 12px;
+      padding: 14px 12px 16px;
+      color: #3a342c;
+      position: relative;
+      min-height: 620px;
+      box-shadow: inset 0 0 0 2px rgba(180,160,130,0.25);
+    }
+    .gr-paper .hand {
+      font-family: 'Yomogi', 'Hachi Maru Pop', cursive;
+      color: #4a4238;
+      text-shadow: 1px 1px 0 rgba(120,90,60,0.12), -1px 0 0 rgba(255,250,240,0.5);
+      letter-spacing: 0.03em;
+    }
+    .gr-paper .hand-bold {
+      font-family: 'Hachi Maru Pop', 'Yomogi', cursive;
+      font-weight: 400;
+      color: #3a3228;
+    }
+
+    .gr-title {
+      font-size: 24px;
+      line-height: 1.4;
+      text-align: center;
+      margin-bottom: 4px;
+      transform: rotate(-0.8deg);
+    }
+    .gr-date {
+      text-align: center;
+      font-size: 11px;
+      color: #8a8275;
+      margin-bottom: 14px;
+    }
+
+    .gr-canvas-wrap {
+      position: relative;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    #rough-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .gr-illus {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+    }
+    .gr-illus.crayon-strokes path,
+    .gr-illus.crayon-strokes line,
+    .gr-illus.crayon-strokes circle,
+    .gr-illus.crayon-strokes ellipse,
+    .gr-illus.crayon-strokes rect {
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .gr-insight {
+      margin: 12px 4px 14px;
+      padding: 12px 14px;
+      background: rgba(255,248,235,0.55);
+      border: 3px solid rgba(200,160,100,0.45);
+      border-radius: 6px 18px 10px 16px;
+      transform: rotate(0.6deg);
+      box-shadow: 2px 3px 0 rgba(160,130,90,0.15);
+    }
+    .gr-insight .lbl {
+      font-size: 10px;
+      color: #8a8275;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .gr-insight .txt {
+      font-size: 15px;
+      line-height: 1.75;
+      color: #2a2520;
+    }
+
+    .gr-questions {
+      display: grid;
+      gap: 10px;
+    }
+    .gr-q {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,248,0.35);
+      transform: rotate(-0.3deg);
+    }
+    .gr-q .ico {
+      flex: 0 0 36px;
+      width: 36px;
+      height: 36px;
+    }
+    .gr-q .body { flex: 1; min-width: 0; }
+    .gr-q .type {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 3px;
+    }
+    .gr-q .text {
+      font-size: 13px;
+      line-height: 1.55;
+      color: #2a2520;
+    }
+
+    .legend {
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--hint);
+      line-height: 1.65;
+      padding: 0 4px;
+    }
+
+    .panel-note {
+      max-width: 720px;
+      margin: 18px auto 0;
+    }
+
+    [data-expl="child"] { display: none; }
+    body.mode-child [data-expl="work"] { display: none; }
+    body.mode-child [data-expl="child"] { display: block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="ref-head">
+      <nav class="nav" style="margin-bottom:12px">
+        <a href="/">← 一覧</a>
+        <span class="on">B 参照（手作り）</span>
+        <a href="/image-feasibility.html">A 画像AI実験</a>
+      </nav>
+      <h1>参照 — 手作りグラレコ（品質基準）</h1>
+      <p>
+        AI なし。MONDO の探究で目指す「一枚絵」の基準。<strong>子供がクレパスで描いたような手書き</strong>—太い線、パステル、塗りムラ、丸い字。
+        プロのグラレコ／マーカー風ではない。
+      </p>
+    </div>
+
+    <div class="phone">
+      <div class="scr">
+        <div class="appbar">
+          <span class="back">‹</span>
+          <div>
+            <div class="ttl">見取り図</div>
+          </div>
+          <span class="sub">探究</span>
+        </div>
+        <div class="tabs">
+          <button type="button" class="on" data-mode="work">身体と仕事</button>
+          <button type="button" data-mode="child">学びと焦り</button>
+        </div>
+        <div class="scroll">
+          <!-- ===== 探究 1 ===== -->
+          <div class="gr-paper" data-expl="work">
+            <div class="gr-title hand-bold">働き方と身体の境界</div>
+            <div class="gr-date hand">2026.07 — 4メモ · 4問い</div>
+
+            <div class="gr-canvas-wrap" style="height:220px">
+              <canvas id="rough-canvas-work"></canvas>
+              <svg class="gr-illus crayon-strokes" viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <filter id="crayon-wobble" x="-5%" y="-5%" width="110%" height="110%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" result="n"/>
+                    <feDisplacementMap in="SourceGraphic" in2="n" scale="1.8" xChannelSelector="R" yChannelSelector="G"/>
+                  </filter>
+                </defs>
+                <g filter="url(#crayon-wobble)">
+                <!-- 左: 会議後のぼんやり -->
+                <g transform="translate(8,20)">
+                  <rect x="20" y="50" width="55" height="35" rx="6" fill="rgba(180,170,150,0.25)" stroke="#6a6458" stroke-width="3"/>
+                  <line x1="47" y1="85" x2="47" y2="110" stroke="#5a5448" stroke-width="3.5"/>
+                  <circle cx="47" cy="38" r="15" fill="rgba(255,220,180,0.35)" stroke="#5a5448" stroke-width="3"/>
+                  <path d="M28 28 Q47 14 66 28" fill="none" stroke="#5a5448" stroke-width="2.5"/>
+                  <text x="47" y="132" text-anchor="middle" font-family="Yomogi" font-size="13" fill="#6a6458">会議のあと</text>
+                  <ellipse cx="47" cy="20" rx="30" ry="14" fill="rgba(154,147,240,0.2)" stroke="#9a93f0" stroke-width="2.5" stroke-dasharray="4 3"/>
+                  <text x="47" y="10" text-anchor="middle" font-family="Hachi Maru Pop" font-size="12" fill="#7a6fd4">ぼんやり</text>
+                </g>
+                <!-- 中央: 境界線 -->
+                <g transform="translate(155,10)">
+                  <line x1="15" y1="180" x2="15" y2="30" stroke="#e07050" stroke-width="4" stroke-dasharray="8 5"/>
+                  <text x="15" y="200" text-anchor="middle" font-family="Hachi Maru Pop" font-size="14" fill="#c05030">境界？</text>
+                  <text x="15" y="22" text-anchor="middle" font-family="Yomogi" font-size="12" fill="#8a8275">効率</text>
+                  <text x="15" y="175" text-anchor="middle" font-family="Yomogi" font-size="12" fill="#8a8275">回復</text>
+                </g>
+                <!-- 右: 散歩 -->
+                <g transform="translate(220,25)">
+                  <circle cx="55" cy="100" r="24" fill="rgba(102,216,177,0.15)" stroke="#4ab88a" stroke-width="2.5"/>
+                  <line x1="55" y1="78" x2="55" y2="52" stroke="#5a5448" stroke-width="3.5"/>
+                  <circle cx="55" cy="44" r="11" fill="rgba(255,230,200,0.4)" stroke="#5a5448" stroke-width="3"/>
+                  <line x1="55" y1="78" x2="40" y2="108" stroke="#5a5448" stroke-width="3"/>
+                  <line x1="55" y1="78" x2="72" y2="100" stroke="#5a5448" stroke-width="3"/>
+                  <line x1="40" y1="108" x2="36" y2="128" stroke="#5a5448" stroke-width="2.5"/>
+                  <line x1="72" y1="100" x2="78" y2="122" stroke="#5a5448" stroke-width="2.5"/>
+                  <path d="M28 132 Q55 118 82 130" fill="none" stroke="#4ab88a" stroke-width="3"/>
+                  <text x="55" y="152" text-anchor="middle" font-family="Yomogi" font-size="13" fill="#2a8870">散歩で戻る</text>
+                </g>
+                <!-- 吹き出し引用 -->
+                <g transform="translate(40,155)">
+                  <path d="M10 0 H200 Q212 0 212 12 V42 Q212 52 200 52 H32 L18 64 L20 52 H10 Q0 52 0 42 V12 Q0 0 10 0Z" fill="rgba(255,252,240,0.85)" stroke="#b8a888" stroke-width="3"/>
+                  <text x="14" y="22" font-family="Yomogi" font-size="13" fill="#4a4238">「休むより散歩の方が</text>
+                  <text x="14" y="42" font-family="Yomogi" font-size="13" fill="#4a4238">　回復する」</text>
+                </g>
+                </g>
+              </svg>
+            </div>
+
+            <div class="gr-insight hand">
+              <div class="lbl">この束が示唆すること</div>
+              <div class="txt">「効率」と「回復」を別カテゴリに分けているのが、疲れの正体かもしれない。問いはどちらか一方ではなく、<em>境界の引き直し</em>に向かっている。</div>
+            </div>
+
+            <div class="gr-questions hand">
+              <div class="gr-q">
+                <svg class="ico" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="rgba(122,119,221,0.15)" stroke="#7a6fd4"/><text x="18" y="22" text-anchor="middle" font-size="14" fill="#7a6fd4">?</text></svg>
+                <div class="body">
+                  <div class="type" style="color:#7a6fd4">深掘り — いつから？</div>
+                  <div class="text">回復しない疲れと、眠れば戻る疲れの境目</div>
+                </div>
+              </div>
+              <div class="gr-q">
+                <svg class="ico" viewBox="0 0 36 36"><path d="M6 28 L18 8 L30 28 Z" fill="none" stroke="#d85a30" stroke-width="1.5"/><text x="18" y="24" text-anchor="middle" font-size="10" fill="#d85a30">座/立</text></svg>
+                <div class="body">
+                  <div class="type" style="color:#d85a30">反証 — 本当に？</div>
+                  <div class="text">集中＝座り、は固定観念かも</div>
+                </div>
+              </div>
+              <div class="gr-q">
+                <svg class="ico" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="#639922"/><text x="18" y="16" text-anchor="middle" font-size="8" fill="#639922">15</text><text x="18" y="26" text-anchor="middle" font-size="7" fill="#639922">min</text></svg>
+                <div class="body">
+                  <div class="type" style="color:#639922">行動 — 来週試す</div>
+                  <div class="text">会議直後の身体リセット（散歩？）</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== 探究 2 ===== -->
+          <div class="gr-paper" data-expl="child">
+            <div class="gr-title hand-bold">子どもの学びと自分の焦り</div>
+            <div class="gr-date hand">2026.07 — 3メモ · 4問い</div>
+
+            <div class="gr-canvas-wrap" style="height:230px">
+              <canvas id="rough-canvas-child"></canvas>
+              <svg class="gr-illus crayon-strokes" viewBox="0 0 340 230" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <filter id="crayon-wobble-child" x="-5%" y="-5%" width="110%" height="110%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" result="n"/>
+                    <feDisplacementMap in="SourceGraphic" in2="n" scale="1.8" xChannelSelector="R" yChannelSelector="G"/>
+                  </filter>
+                </defs>
+                <g filter="url(#crayon-wobble-child)">
+                <g transform="translate(20,30)">
+                  <rect x="40" y="60" width="70" height="10" rx="3" fill="rgba(200,190,170,0.3)" stroke="#6a6458" stroke-width="2.5"/>
+                  <rect x="40" y="76" width="50" height="10" rx="3" fill="rgba(200,190,170,0.2)" stroke="#6a6458" stroke-width="2.5"/>
+                  <circle cx="75" cy="40" r="13" fill="rgba(255,220,180,0.35)" stroke="#5a5448" stroke-width="3"/>
+                  <text x="75" y="108" text-anchor="middle" font-family="Yomogi" font-size="12" fill="#7a7468">宿題の机</text>
+                  <circle cx="30" cy="50" r="11" fill="rgba(255,230,200,0.4)" stroke="#5a5448" stroke-width="2.8"/>
+                  <line x1="30" y1="61" x2="30" y2="82" stroke="#5a5448" stroke-width="3"/>
+                  <path d="M12 44 Q30 32 42 46" fill="none" stroke="#e8b858" stroke-width="3"/>
+                  <text x="6" y="28" font-family="Yomogi" font-size="12" fill="#c89838">一緒にやりたい</text>
+                </g>
+                <g transform="translate(130,20)">
+                  <path d="M148 18 L164 18 L159 56 L153 56 Z M153 56 L148 94 L164 94 L159 56" fill="rgba(240,160,120,0.2)" stroke="#e07050" stroke-width="3"/>
+                  <text x="156" y="112" text-anchor="middle" font-family="Hachi Maru Pop" font-size="14" fill="#c05030">焦り</text>
+                </g>
+                <g transform="translate(210,35)" opacity="0.7">
+                  <circle cx="50" cy="40" r="16" fill="rgba(200,190,180,0.2)" stroke="#9a9088" stroke-width="2.5" stroke-dasharray="5 3"/>
+                  <text x="50" y="46" text-anchor="middle" font-family="Yomogi" font-size="11" fill="#8a8275">友達の子</text>
+                  <text x="50" y="78" text-anchor="middle" font-family="Yomogi" font-size="12" fill="#8a8275">自分でやる？</text>
+                  <line x1="18" y1="94" x2="82" y2="94" stroke="#a89888" stroke-width="2.5" stroke-dasharray="5 4"/>
+                  <text x="50" y="110" text-anchor="middle" font-family="Yomogi" font-size="11" fill="#c05030">比べてしまう</text>
+                </g>
+                <g transform="translate(30,165)">
+                  <path d="M8 0 H180 Q190 0 190 10 V36 Q190 44 180 44 H26 L14 56 L16 44 H8 Q0 44 0 36 V10 Q0 0 8 0Z" fill="rgba(255,252,240,0.9)" stroke="#b8a888" stroke-width="3"/>
+                  <text x="12" y="20" font-family="Yomogi" font-size="13" fill="#4a4238">「自分の時間が欲しい」</text>
+                  <text x="12" y="38" font-family="Yomogi" font-size="12" fill="#8a8275">—— 言えないまま</text>
+                </g>
+                </g>
+              </svg>
+            </div>
+
+            <div class="gr-insight hand">
+              <div class="lbl">この束が示唆すること</div>
+              <div class="txt">正しい関わり方を探すより、<em>焦りの源泉</em>に向かっている。比較ではなく、自分の物語の再確認に近い。</div>
+            </div>
+
+            <div class="gr-questions hand">
+              <div class="gr-q">
+                <svg class="ico" viewBox="0 0 36 36"><circle cx="18" cy="14" r="8" fill="none" stroke="#7a6fd4"/><path d="M10 26 Q18 20 26 26" fill="none" stroke="#7a6fd4"/><text x="18" y="16" text-anchor="middle" font-size="8" fill="#7a6fd4">?</text></svg>
+                <div class="body">
+                  <div class="type" style="color:#7a6fd4">深掘り — 奥にあるもの</div>
+                  <div class="text">早く終わらせたい、の裏の不安</div>
+                </div>
+              </div>
+              <div class="gr-q">
+                <svg class="ico" viewBox="0 0 36 36"><rect x="8" y="10" width="20" height="16" rx="2" fill="none" stroke="#378add"/><path d="M12 30 L24 30" stroke="#378add"/></svg>
+                <div class="body">
+                  <div class="type" style="color:#378add">接続 — 仕事と似てる？</div>
+                  <div class="text">「任せる練習」と子育て</div>
+                </div>
+              </div>
+              <div class="gr-q">
+                <svg class="ico" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="#639922" stroke-dasharray="4 2"/><text x="18" y="22" text-anchor="middle" font-size="10" fill="#639922">待</text></svg>
+                <div class="body">
+                  <div class="type" style="color:#639922">行動 — 今週1回</div>
+                  <div class="text">宿題の場面で「待つ」</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="legend hand">問いは一覧ではなく、小さなイラストとセットで「まだ開いている」ことが伝わるように。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-note">
+      <div class="panel-h">この参照で見るポイント</div>
+      <div class="panel-b note-box">
+        <strong>トーン</strong>
+        子供のクレパス手書き—プロのグラレコ／マーカー風ではない。線は太く、色はパステル、字は丸く不揃い。<br><br>
+        <strong>AI 画像生成 (A) の合格ライン</strong>
+        日本語プロンプトで、この紙面と同じ「クレパスで描いた一枚絵」になるか。<br><br>
+        <strong>本番実装の方向</strong>
+        完全自動生成が難しければ、AI は構成案＋この参照に近いテンプレ／アイコン合成を検討。
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/roughjs@4.6.6/bundled/rough.js"></script>
+  <script>
+    const CRAYON = {
+      roughness: 2.8,
+      bowing: 2.2,
+      strokeWidth: 3.2,
+      fillStyle: 'solid',
+      fillWeight: 2,
+    };
+
+    function drawCrayonLayer(canvasId, shapes, paths) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas || !window.rough) return;
+      const wrap = canvas.parentElement;
+      canvas.width = wrap.clientWidth;
+      canvas.height = wrap.clientHeight;
+      const rc = rough.canvas(canvas);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const sx = canvas.width / 340;
+      const sy = canvas.height / (canvasId.includes('child') ? 230 : 220);
+
+      for (const s of shapes) {
+        const opts = { ...CRAYON, stroke: s.color, fill: s.fill ?? s.color, fillStyle: 'solid', fillWeight: 1.8 };
+        if (s.type === 'circle') {
+          rc.circle(s.x * sx, s.y * sy, (s.r ?? 20) * sx, opts);
+        } else if (s.type === 'rect') {
+          rc.rectangle(s.x * sx, s.y * sy, s.w * sx, s.h * sy, opts);
+        }
+      }
+      for (const p of paths) {
+        rc.line(p.x1 * sx, p.y1 * sy, p.x2 * sx, p.y2 * sy, {
+          ...CRAYON,
+          stroke: p.color || '#9a8a70',
+          strokeWidth: p.w ?? 3.5,
+        });
+      }
+    }
+
+    function refreshRough() {
+      drawCrayonLayer('rough-canvas-work', [
+        { type: 'circle', x: 47, y: 55, r: 18, color: '#b8b0f0', fill: 'rgba(180,170,240,0.2)' },
+        { type: 'circle', x: 275, y: 115, r: 28, color: '#88d8b8', fill: 'rgba(130,220,180,0.15)' },
+      ], [
+        { x1: 95, y1: 100, x2: 155, y2: 98, color: '#a8a0e8', w: 4 },
+        { x1: 175, y1: 100, x2: 235, y2: 102, color: '#68c8a0', w: 4 },
+        { x1: 120, y1: 148, x2: 200, y2: 132, color: '#c8b898', w: 3 },
+      ]);
+      drawCrayonLayer('rough-canvas-child', [
+        { type: 'circle', x: 155, y: 55, r: 22, color: '#f0a080', fill: 'rgba(240,160,120,0.2)' },
+      ], [
+        { x1: 110, y1: 72, x2: 145, y2: 58, color: '#e08060', w: 3.5 },
+        { x1: 200, y1: 82, x2: 258, y2: 72, color: '#a89888', w: 3 },
+        { x1: 90, y1: 158, x2: 168, y2: 142, color: '#e8c878', w: 3.5 },
+      ]);
+    }
+
+    document.querySelectorAll('.tabs button').forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll('.tabs button').forEach((b) => b.classList.remove('on'));
+        btn.classList.add('on');
+        document.body.className = btn.dataset.mode === 'child' ? 'mode-child' : '';
+        requestAnimationFrame(refreshRough);
+      };
+    });
+
+    window.addEventListener('resize', refreshRough);
+    window.addEventListener('load', refreshRough);
+  </script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>パターン A — 画像生成 AI</title>
+  <link rel="stylesheet" href="/shared.css">
+  <style>
+    .stage { position: relative; min-height: 480px; }
+    .stage img { width: 100%; display: block; border-radius: 12px; }
+    .placeholder {
+      min-height: 420px;
+      background: linear-gradient(145deg, #1e1a16, #2a2218);
+      border: 2px dashed #4a443b;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      gap: 12px;
+    }
+    .placeholder .sketch {
+      font-size: 48px;
+      opacity: 0.5;
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .overlay .cap {
+      background: rgba(16,15,13,0.82);
+      border: 1px solid rgba(236,231,221,0.2);
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-width: 85%;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #ece7dd;
+      pointer-events: auto;
+    }
+    .overlay .cap.headline { font-weight: 700; font-size: 15px; align-self: center; text-align: center; }
+    .overlay .cap.insight { align-self: flex-start; border-left: 3px solid var(--accent); }
+    .overlay .cap.quote { align-self: flex-end; font-style: italic; color: #d8d2c6; }
+    .prompt-box {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--hint);
+      line-height: 1.6;
+      max-height: 100px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>パターン A — 画像生成 AI</h1>
+        <p>Claude → 英語 image_prompt → DALL·E 3。日本語は画像の上にオーバーレイ。</p>
+      </div>
+      <nav class="nav">
+        <a href="/">一覧</a>
+        <span class="on">A 画像</span>
+        <a href="/pattern-b.html">B 構造化</a>
+        <a href="/pattern-c.html">C 地図</a>
+      </nav>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-h">
+          <span>プレビュー</span>
+          <span id="timing" class="status"></span>
+        </div>
+        <div class="panel-b">
+          <div class="controls">
+            <select id="sample">
+              <option value="work_body">働き方と身体の境界</option>
+              <option value="child_learning">子どもの学びと自分の焦り</option>
+            </select>
+            <button id="generate">AI で生成</button>
+            <button id="clear" class="ghost">クリア</button>
+          </div>
+          <div id="status" class="status">「AI で生成」を押すと Claude がプロンプトを作り、OpenAI キーがあれば画像も生成します。</div>
+          <div class="canvas-wrap stage empty" id="stage">
+            生成結果がここに表示されます
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">AI 出力・所感</div>
+        <div class="panel-b meta-list">
+          <div class="note-box">
+            <strong>このパターンの想定</strong>
+            本物のグラレコに最も近い見た目。ただし日本語は画像に入れず、別レイヤーで載せる前提。
+          </div>
+          <ul class="pros-cons" id="pros-cons"></ul>
+          <div class="note-box" id="image-note" style="display:none"></div>
+          <pre class="json-out" id="json">{}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getExploration, generatePattern } from '/shared.js';
+
+    const stage = document.getElementById('stage');
+    const status = document.getElementById('status');
+    const jsonEl = document.getElementById('json');
+    const prosCons = document.getElementById('pros-cons');
+    const imageNote = document.getElementById('image-note');
+    const timing = document.getElementById('timing');
+    const sample = document.getElementById('sample');
+    const btn = document.getElementById('generate');
+
+    document.getElementById('clear').onclick = () => {
+      stage.innerHTML = '生成結果がここに表示されます';
+      stage.className = 'canvas-wrap stage empty';
+      jsonEl.textContent = '{}';
+      prosCons.innerHTML = '';
+      imageNote.style.display = 'none';
+      status.textContent = '';
+      timing.textContent = '';
+    };
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      status.className = 'status';
+      status.textContent = '生成中…（Aは画像APIがあると30秒〜かかります）';
+      const t0 = performance.now();
+      try {
+        const exploration = getExploration(sample.value);
+        const result = await generatePattern('A', exploration);
+        const spec = result.spec;
+        jsonEl.textContent = JSON.stringify(result, null, 2);
+
+        prosCons.innerHTML = [
+          ...(spec.strengths ?? []).map((s) => `<li><span class="tag ok">強み</span> ${s}</li>`),
+          ...(spec.limitations ?? []).map((s) => `<li><span class="tag warn">制限</span> ${s}</li>`),
+        ].join('');
+
+        stage.className = 'canvas-wrap stage';
+        stage.innerHTML = '';
+
+        if (result.imageDataUrl) {
+          const img = document.createElement('img');
+          img.src = result.imageDataUrl;
+          img.alt = 'Generated graphic recording';
+          stage.appendChild(img);
+          imageNote.style.display = 'block';
+          imageNote.innerHTML = '<strong>画像生成</strong>OpenAI DALL·E 3 で生成済み。日本語キャプションはオーバーレイ。';
+        } else {
+          const ph = document.createElement('div');
+          ph.className = 'placeholder';
+          ph.innerHTML = `
+            <div class="sketch">🖍️</div>
+            <div style="font-size:14px;color:#ece7dd;font-weight:600">画像 API 未使用</div>
+            <div style="font-size:12px;color:#9c9488;max-width:360px;line-height:1.65">
+              .env に <code>OPENAI_API_KEY</code> を設定すると DALL·E 3 が呼ばれます。
+              ${result.imageError ? `<br><br>エラー: ${result.imageError}` : ''}
+            </div>`;
+          stage.appendChild(ph);
+          imageNote.style.display = 'block';
+          imageNote.innerHTML = '<strong>image_prompt（英語）</strong><div class="prompt-box"></div>';
+          imageNote.querySelector('.prompt-box').textContent = spec.image_prompt ?? '';
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        for (const cap of spec.overlay_captions ?? []) {
+          const div = document.createElement('div');
+          div.className = `cap ${cap.role ?? ''}`;
+          div.textContent = cap.text;
+          overlay.appendChild(div);
+        }
+        stage.appendChild(overlay);
+
+        const sec = ((performance.now() - t0) / 1000).toFixed(1);
+        timing.textContent = `${sec}s`;
+        status.className = 'status ok';
+        status.textContent = '生成完了';
+      } catch (err) {
+        status.className = 'status err';
+        status.textContent = err.message ?? String(err);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

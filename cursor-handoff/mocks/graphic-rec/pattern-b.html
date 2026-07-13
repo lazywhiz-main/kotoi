@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>パターン B — 構造化 JSON + SVG</title>
+  <link rel="stylesheet" href="/shared.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>パターン B — 構造化 JSON + SVG</h1>
+        <p>Claude が付箋レイアウト JSON を出力 → ブラウザ SVG でグラレコ風描画。問いブロックはクリック可。</p>
+      </div>
+      <nav class="nav">
+        <a href="/">一覧</a>
+        <a href="/pattern-a.html">A 画像</a>
+        <span class="on">B 構造化</span>
+        <a href="/pattern-c.html">C 地図</a>
+      </nav>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-h">
+          <span>見取り図キャンバス</span>
+          <span id="timing" class="status"></span>
+        </div>
+        <div class="panel-b">
+          <div class="controls">
+            <select id="sample">
+              <option value="work_body">働き方と身体の境界</option>
+              <option value="child_learning">子どもの学びと自分の焦り</option>
+            </select>
+            <button id="generate">AI で生成</button>
+            <button id="clear" class="ghost">クリア</button>
+          </div>
+          <div id="status" class="status">付箋・矢印・類型色。本番は React Native Skia に移植想定。</div>
+          <div id="pick" class="status" style="margin-top:6px"></div>
+          <div class="canvas-wrap empty" id="canvas">生成結果がここに表示されます</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">AI 出力・所感</div>
+        <div class="panel-b meta-list">
+          <div class="note-box">
+            <strong>このパターンの想定</strong>
+            MONDO 本番向け第一候補。探究更新のたびに JSON を再生成し、タップで問いへ遷移できる。
+          </div>
+          <ul class="pros-cons" id="pros-cons"></ul>
+          <pre class="json-out" id="json">{}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getExploration, generatePattern, TYPE_COLORS } from '/shared.js';
+    import { renderStructuredCanvas } from '/render-b.js';
+
+    const canvas = document.getElementById('canvas');
+    const status = document.getElementById('status');
+    const pick = document.getElementById('pick');
+    const jsonEl = document.getElementById('json');
+    const prosCons = document.getElementById('pros-cons');
+    const timing = document.getElementById('timing');
+    const sample = document.getElementById('sample');
+    const btn = document.getElementById('generate');
+    let exploration = getExploration('work_body');
+
+    document.getElementById('clear').onclick = () => {
+      canvas.innerHTML = '生成結果がここに表示されます';
+      canvas.className = 'canvas-wrap empty';
+      jsonEl.textContent = '{}';
+      prosCons.innerHTML = '';
+      pick.textContent = '';
+      timing.textContent = '';
+    };
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      status.className = 'status';
+      status.textContent = 'Claude がレイアウト JSON を生成中…';
+      pick.textContent = '';
+      const t0 = performance.now();
+      try {
+        exploration = getExploration(sample.value);
+        const result = await generatePattern('B', exploration);
+        const spec = result.spec;
+        jsonEl.textContent = JSON.stringify(spec, null, 2);
+
+        prosCons.innerHTML = [
+          ...(spec.strengths ?? []).map((s) => `<li><span class="tag ok">強み</span> ${s}</li>`),
+          ...(spec.limitations ?? []).map((s) => `<li><span class="tag warn">制限</span> ${s}</li>`),
+        ].join('');
+
+        renderStructuredCanvas(canvas, spec, exploration, (block) => {
+          const q = exploration.questions.find((x) => x.id === block.question_id);
+          const tc = block.question_type ? TYPE_COLORS[block.question_type] : null;
+          pick.innerHTML = q
+            ? `選択: <span class="leg-type-${block.question_type}">${tc?.label ?? ''}</span> ${q.body}`
+            : `選択: ${block.text}`;
+        });
+
+        const sec = ((performance.now() - t0) / 1000).toFixed(1);
+        timing.textContent = `${sec}s`;
+        status.className = 'status ok';
+        status.textContent = `blocks ${spec.blocks?.length ?? 0} · edges ${spec.edges?.length ?? 0}`;
+      } catch (err) {
+        status.className = 'status err';
+        status.textContent = err.message ?? String(err);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>問い箱 — メモ詳細モック B (v1)</title>
+<style>
+  :root{
+    --bg:#f4f2ec; --ink:#26251f; --sub:#6b6960; --hint:#9a978c;
+    --card:#ffffff; --line:#e7e4da; --accent:#3a3630;
+    --seed:#BA7517; --seed-bg:#FAEEDA;
+    --learn:#185FA5; --learn-bg:#E6F1FB;
+    --dig:#534AB7; --dig-bg:#EEEDFE;    /* 深掘り purple */
+    --con:#0F6E56; --con-bg:#E1F5EE;    /* 接続 teal */
+    --ref:#993C1D; --ref-bg:#FAECE7;    /* 反証 coral */
+    --act:#3B6D11; --act-bg:#EAF3DE;    /* 行動 green */
+    --exp:#0C447C; --exp-bg:#E6F1FB;    /* 拡張 blue */
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;background:#e9e6de;color:var(--ink);
+       display:flex;flex-direction:column;align-items:center;padding:28px 16px 60px;-webkit-font-smoothing:antialiased}
+  .head{width:100%;max-width:760px;margin-bottom:20px}
+  .head h1{font-size:19px;font-weight:600;letter-spacing:.01em}
+  .head p{font-size:13px;color:#6b6960;margin-top:4px;line-height:1.6}
+  .controls{width:100%;max-width:760px;display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px;align-items:center}
+  .seg{display:inline-flex;background:#ded9cf;border-radius:10px;padding:3px}
+  .seg button{border:0;background:transparent;font:inherit;font-size:13px;color:#5f5d55;padding:7px 13px;border-radius:8px;cursor:pointer;font-weight:500}
+  .seg button.on{background:#fff;color:#26251f;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .lbl{font-size:12px;color:#8a887e;margin-right:2px}
+
+  .phone{width:390px;background:#000;border-radius:44px;padding:11px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+  .scr{background:var(--bg);border-radius:34px;overflow:hidden;height:760px;display:flex;flex-direction:column;position:relative}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;flex:0 0 auto}
+  .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#000;border-radius:0 0 16px 16px;z-index:5}
+  .appbar{flex:0 0 auto;padding:6px 20px 14px;display:flex;align-items:center;gap:12px}
+  .appbar .back{font-size:20px;color:#8a887e}
+  .appbar .ttl{font-size:15px;font-weight:600}
+  .appbar .spacer{flex:1}
+  .appbar .dots{color:#9a978c;font-size:18px}
+  .body{flex:1;overflow-y:auto;padding:0 18px 30px}
+  .body::-webkit-scrollbar{width:0}
+
+  /* memo header block */
+  .memo{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:14px}
+  .chips{display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap}
+  .chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+  .chip.seed{color:var(--seed);background:var(--seed-bg)}
+  .chip.learn{color:var(--learn);background:var(--learn-bg)}
+  .chip.vid{color:#712b13;background:#FAECE7}
+  .memo .raw{font-size:14.5px;line-height:1.7}
+  .memo .meta{font-size:11.5px;color:var(--hint);margin-top:9px}
+  .vidcard{display:flex;gap:10px;margin-top:11px;background:#f7f5ef;border-radius:12px;padding:9px;align-items:center}
+  .vidthumb{width:72px;height:48px;border-radius:8px;background:linear-gradient(135deg,#c0392b,#7b241c);flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+  .vidcard .vt{font-size:12.5px;font-weight:600;line-height:1.4}
+  .vidcard .vs{font-size:11px;color:var(--hint);margin-top:3px}
+
+  .sectlabel{font-size:11.5px;font-weight:700;color:#8a887e;letter-spacing:.04em;margin:18px 4px 9px}
+
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:6px}
+  .summary .stitle{font-size:12px;font-weight:700;color:#6b6960;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .summary p{font-size:13.5px;line-height:1.75;color:#3d3b34}
+  .kp{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+  .kp div{font-size:12.5px;line-height:1.6;color:#54524a;padding-left:16px;position:relative}
+  .kp div:before{content:"•";position:absolute;left:3px;color:#b3b0a6}
+
+  /* question card (timeline) */
+  .q{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px;margin-bottom:11px;border-left:4px solid}
+  .q .qt{font-size:11px;font-weight:700;margin-bottom:7px;letter-spacing:.02em}
+  .q .qq{font-size:14.5px;line-height:1.7;font-weight:500}
+  .q .qa{margin-top:11px;display:flex;gap:8px}
+  .q .qa button{font:inherit;font-size:12px;border:1px solid var(--line);background:#faf9f5;color:#6b6960;padding:6px 11px;border-radius:9px;cursor:pointer}
+  .dig{border-left-color:var(--dig)} .dig .qt{color:var(--dig)}
+  .con{border-left-color:var(--con)} .con .qt{color:var(--con)}
+  .ref{border-left-color:var(--ref)} .ref .qt{color:var(--ref)}
+  .act{border-left-color:var(--act)} .act .qt{color:var(--act)}
+  .exp{border-left-color:var(--exp)} .exp .qt{color:var(--exp)}
+
+  /* dialog */
+  .chat{padding-top:6px}
+  .bubble{max-width:84%;padding:12px 14px;border-radius:16px;font-size:13.5px;line-height:1.7;margin-bottom:12px}
+  .ai{background:var(--card);border:1px solid var(--line);border-top-left-radius:5px}
+  .me{background:#3a3630;color:#f4f2ec;margin-left:auto;border-top-right-radius:5px}
+  .bubble .tag{font-size:10.5px;font-weight:700;margin-bottom:6px;letter-spacing:.03em}
+  .qnav{display:flex;gap:7px;flex-wrap:wrap;margin:4px 0 16px}
+  .qnav button{font:inherit;font-size:11.5px;padding:7px 11px;border-radius:20px;border:1px solid var(--line);background:#fff;cursor:pointer;color:#6b6960;font-weight:500}
+  .qnav button.cur{background:#efece4;border-color:#d9d5c9;color:#3d3b34}
+  .replybar{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:22px;padding:6px 6px 6px 15px;margin-top:4px}
+  .replybar input{flex:1;border:0;font:inherit;font-size:13px;background:transparent;outline:none;color:var(--ink)}
+  .replybar .send{width:32px;height:32px;border-radius:50%;background:#3a3630;color:#fff;border:0;font-size:15px;cursor:pointer;flex:0 0 auto}
+  .hintline{font-size:11.5px;color:var(--hint);text-align:center;margin:2px 0 14px}
+
+  /* map */
+  .maphint{font-size:11.5px;color:var(--hint);text-align:center;margin:8px 0 2px}
+  svg{display:block;width:100%;height:auto}
+  .footnote{width:100%;max-width:760px;margin-top:24px;font-size:12px;color:#6b6960;line-height:1.7}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+  .legend span{font-size:11.5px;display:inline-flex;align-items:center;gap:5px;color:#54524a}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>問い箱 — メモ詳細（B）モック v1</h1>
+    <p>1メモをどう見せるかの3案 × テキスト/動画メモ。上のボタンで切り替えて比較してください。</p>
+  </div>
+
+  <div class="controls">
+    <span class="lbl">見せ方</span>
+    <div class="seg" id="patseg">
+      <button data-p="timeline" class="on">タイムライン型</button>
+      <button data-p="dialog">対話型</button>
+      <button data-p="map">マップ型</button>
+    </div>
+    <span class="lbl" style="margin-left:8px">メモ</span>
+    <div class="seg" id="memoseg">
+      <button data-m="a" class="on">テキスト</button>
+      <button data-m="b">動画</button>
+    </div>
+  </div>
+
+  <div class="phone">
+    <div class="scr">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>&#9679;&#9679;&#9679; &#128246; &#128267;</span></div>
+      <div class="appbar">
+        <span class="back">&#8249;</span>
+        <span class="ttl" id="apptitle">メモ</span>
+        <span class="spacer"></span>
+        <span class="dots">&#8943;</span>
+      </div>
+      <div class="body" id="screen"></div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <div class="legend">
+      <span><i style="background:#534AB7"></i>深掘り</span>
+      <span><i style="background:#0F6E56"></i>接続</span>
+      <span><i style="background:#993C1D"></i>反証</span>
+      <span><i style="background:#3B6D11"></i>行動</span>
+      <span><i style="background:#0C447C"></i>拡張</span>
+    </div>
+    <p style="margin-top:10px">問いは常にこの5類型で生成されます。データはダミーです。「どの見せ方が"また開きたく"なるか」を基準に選んでください。</p>
+  </div>
+
+<script>
+const DATA = {
+  a: {
+    title:"メモ",
+    chips:[{c:"learn",t:"学び"},{c:"seed",t:"ひらめき"}],
+    raw:"「小さいチームほど意思決定が速い」って記事読んだ。でも今のBD案件、人が少なすぎて逆に詰まってる感覚があるんだよな。",
+    meta:"7月8日 23:14 · テキスト",
+    video:null,
+    summary:{
+      text:"記事の主張は「少人数＝意思決定が速い」。ただしその前提には〈メンバーの能力が高い〉〈情報が全員に共有されている〉が隠れている。人数そのものより、意思決定に必要な情報と権限がそろっているかが効いている可能性。",
+      kp:["「速い」は決定のスピードであって、決定の質とは別軸","あなたの実感（少人数なのに詰まる）は、記事の前提が崩れているサインかも"]
+    },
+    q:[
+      {k:"dig",t:"深掘り",q:"「速い」の中身は何？　決定のスピードと、決定の質を分けて捉えてる？"},
+      {k:"con",t:"接続",q:"6/24の『情報が特定の人に偏ってる』メモと、同じ問題を別角度で見ているのでは？"},
+      {k:"ref",t:"反証",q:"本当の変数が〈人数〉ではなく〈誰が決めるか〉なら、増員しても速くならない。どっち？"},
+      {k:"act",t:"行動",q:"今の案件で詰まった意思決定を1つ選び、原因を〈人数／情報／権限〉のどれか仕分けしてみる？"},
+      {k:"exp",t:"拡張",q:"もしこのチームを倍にしたら、速さは戻る？　それとも別の何かが壊れる？"}
+    ]
+  },
+  b: {
+    title:"メモ",
+    chips:[{c:"vid",t:"動画"},{c:"learn",t:"学び"}],
+    raw:"あとで見る。プロダクトの価格設定の話。",
+    meta:"7月7日 08:02 · 動画リンク",
+    video:{thumb:"&#9654;",vt:"SaaSの値付けを間違える3つのパターン",vs:"YouTube · 14:32 · 文字起こし取得済み"},
+    summary:{
+      text:"値付けの典型的な失敗は3つ。①コスト積み上げで決める（顧客価値と無関係）②競合に横並び（差別化を捨てる）③一度決めたら動かさない（値上げを恐れる）。動画の主張は、価格は〈実験対象〉であり、定期的に見直す前提で設計すべき、というもの。",
+      kp:["3パターンは「価値基準で決めていない」点が共通","「値上げは1回のイベントではなく運用」という捉え方が肝"]
+    },
+    q:[
+      {k:"dig",t:"深掘り",q:"3パターンのうち、自社が一番ハマりやすいのはどれ？　それはなぜ？"},
+      {k:"con",t:"接続",q:"先週の『松竹梅の松が売れない』メモは、この動画のどのパターンに当たる？"},
+      {k:"ref",t:"反証",q:"動画は〈値上げすべき〉前提。値下げで量を取る方が正しい局面は、自社に本当にない？"},
+      {k:"act",t:"行動",q:"自社の現行プランを3パターンに当てはめ、即修正できる箇所を1つだけ出す？"},
+      {k:"exp",t:"拡張",q:"価格を〈人単位〉でなく〈成果単位〉にしたら、この議論はどう変わる？"}
+    ]
+  }
+};
+
+let state = {p:"timeline", m:"a"};
+const screen = document.getElementById('screen');
+
+function memoHeader(d){
+  let v = d.video ? `<div class="vidcard"><div class="vidthumb">${d.video.thumb}</div><div><div class="vt">${d.video.vt}</div><div class="vs">${d.video.vs}</div></div></div>` : "";
+  return `<div class="memo"><div class="chips">${d.chips.map(c=>`<span class="chip ${c.c}">${c.t}</span>`).join('')}</div><div class="raw">${d.raw}</div>${v}<div class="meta">${d.meta}</div></div>`;
+}
+function summaryBlock(d){
+  return `<div class="summary"><div class="stitle">&#128220; ${d.video?'文字起こし要約':'要約'}</div><p>${d.summary.text}</p><div class="kp">${d.summary.kp.map(k=>`<div>${k}</div>`).join('')}</div></div>`;
+}
+
+function renderTimeline(d){
+  let qs = d.q.map(q=>`<div class="q ${q.k}"><div class="qt">${q.t}の問い</div><div class="qq">${q.q}</div><div class="qa"><button>答える</button><button>掘り下げる ＋</button></div></div>`).join('');
+  screen.innerHTML = memoHeader(d) + summaryBlock(d) + `<div class="sectlabel">問い ${d.q.length}</div>` + qs;
+}
+
+function renderDialog(d){
+  let cur = 0;
+  function draw(){
+    let q = d.q[cur];
+    let nav = d.q.map((x,i)=>`<button class="${i===cur?'cur':''}" data-i="${i}">${x.t}</button>`).join('');
+    screen.innerHTML = memoHeader(d) +
+      `<div class="chat">
+        <div class="bubble ai"><div class="tag" style="color:#6b6960">${d.video?'文字起こしを読みました':'メモを読みました'}</div>${d.summary.text}</div>
+        <div class="bubble ai"><div class="tag" style="color:var(--${q.k})">いちばん気になったのは、${q.t}の問い</div>${q.q}</div>
+        <div class="replybar"><input placeholder="思いつくまま答えてみる…"><button class="send">&#8593;</button></div>
+        <div class="hintline">答えると、その答えからさらに問いが伸びます</div>
+        <div class="sectlabel" style="margin-left:2px">ほかの問いへ</div>
+        <div class="qnav">${nav}</div>
+      </div>`;
+    screen.querySelectorAll('.qnav button').forEach(b=>b.onclick=()=>{cur=+b.dataset.i;draw();});
+  }
+  draw();
+}
+
+function renderMap(d){
+  const cx=185, cy=250, r=150;
+  const cols={dig:'#534AB7',con:'#0F6E56',ref:'#993C1D',act:'#3B6D11',exp:'#0C447C'};
+  const bgs={dig:'#EEEDFE',con:'#E1F5EE',ref:'#FAECE7',act:'#EAF3DE',exp:'#E6F1FB'};
+  let n=d.q.length;
+  let leaves="", lines="";
+  d.q.forEach((q,i)=>{
+    let ang=(-90 + i*(360/n))*Math.PI/180;
+    let x=cx+r*Math.cos(ang), y=cy+r*Math.sin(ang);
+    lines+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${cols[q.k]}" stroke-width="1.5" opacity="0.5"/>`;
+    let tx=x, anchor='middle';
+    let words=q.q.length>26?q.q.slice(0,25)+'…':q.q;
+    leaves+=`<g>
+      <circle cx="${x}" cy="${y}" r="30" fill="${bgs[q.k]}" stroke="${cols[q.k]}" stroke-width="1.5"/>
+      <text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" font-weight="700" fill="${cols[q.k]}">${q.t}</text>
+    </g>`;
+  });
+  let labels=d.q.map((q,i)=>`<div class="q ${q.k}" style="margin-bottom:9px;padding:11px 13px"><div class="qt">${q.t}</div><div class="qq" style="font-size:13.5px">${q.q}</div></div>`).join('');
+  screen.innerHTML = `<div class="maphint">メモを中心に、5方向へ問いが枝分かれ</div>
+    <svg viewBox="0 0 370 500">
+      ${lines}
+      <circle cx="${cx}" cy="${cy}" r="52" fill="#3a3630"/>
+      <text x="${cx}" y="${cy-6}" text-anchor="middle" font-size="10.5" fill="#cfcbc0">${d.video?'動画メモ':'メモ'}</text>
+      <foreignObject x="${cx-46}" y="${cy-2}" width="92" height="46">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:9.5px;line-height:1.35;color:#f4f2ec;text-align:center;font-family:sans-serif">${d.raw.slice(0,34)}…</div>
+      </foreignObject>
+      ${leaves}
+    </svg>
+    <div class="sectlabel">タップした問いを開く</div>
+    ${labels}`;
+}
+
+function render(){
+  const d = DATA[state.m];
+  document.getElementById('apptitle').textContent = d.title;
+  if(state.p==='timeline') renderTimeline(d);
+  else if(state.p==='dialog') renderDialog(d);
+  else renderMap(d);
+  screen.scrollTop=0;
+}
+
+document.querySelectorAll('#patseg button').forEach(b=>b.onclick=()=>{
+  state.p=b.dataset.p; document.querySelectorAll('#patseg button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); render();
+});
+document.querySelectorAll('#memoseg button').forEach(b=>b.onclick=()=>{
+  state.m=b.dataset.m; document.querySelectorAll('#memoseg button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); render();
+});
+render();
+</script>
+</body>
+</html>
