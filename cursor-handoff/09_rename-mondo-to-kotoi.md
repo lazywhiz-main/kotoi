@@ -21,7 +21,7 @@
 | **iOS bundle ID** | **`app.kotoi`**（`kotoi.app` の reverse-DNS。旧 `app.mondo.notes`） |
 | **Android package** | **`app.kotoi`**（同上） |
 | URLスキーム | **`kotoi://`**（現行は `mondo://`） |
-| Expo slug | **`kotoi`**（現行は `mondo`） |
+| Expo slug | **`mondo`（EAS projectId に固定。変更不可 → 表示名は KOTOI のまま）** |
 | X | `@kotoi_app` |
 | Instagram | `@kotoi.app` |
 

@@ -1,18 +1,32 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { formatApiError } from '@/lib/errors';
+import type { RecallRhythm } from '@/lib/dailyQuestion';
 import { getSupabase } from '@/lib/supabase';
 import type { UserSettings } from '@/lib/types';
 
 const DEFAULT_SETTINGS = {
   notify_agent_done: true,
   notify_weekly_review: true,
+  notify_daily_question: true,
+  recall_rhythm: 'off' as RecallRhythm,
+  recall_weekday: 0,
+  recall_hour: 8,
 };
+
+type SettingKey =
+  | 'notify_agent_done'
+  | 'notify_weekly_review'
+  | 'notify_daily_question'
+  | 'appearance'
+  | 'recall_rhythm'
+  | 'recall_weekday'
+  | 'recall_hour';
 
 export function useUserSettings(userId: string | undefined) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [savingKey, setSavingKey] = useState<SettingKey | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -61,16 +75,13 @@ export function useUserSettings(userId: string | undefined) {
   }, [load]);
 
   const updateSetting = useCallback(
-    async (
-      key: 'notify_agent_done' | 'notify_weekly_review' | 'appearance',
-      value: boolean | UserSettings['appearance'],
-    ) => {
+    async (key: SettingKey, value: boolean | UserSettings['appearance'] | RecallRhythm | number) => {
       if (!userId) return;
 
       const supabase = getSupabase();
       if (!supabase) return;
 
-      setSaving(true);
+      setSavingKey(key);
       setError(null);
 
       const previous = settings;
@@ -91,7 +102,7 @@ export function useUserSettings(userId: string | undefined) {
         setSettings(previous);
         setError(formatApiError(err));
       } finally {
-        setSaving(false);
+        setSavingKey(null);
       }
     },
     [userId, settings],
@@ -100,7 +111,8 @@ export function useUserSettings(userId: string | undefined) {
   return {
     settings,
     loading,
-    saving,
+    saving: savingKey !== null,
+    savingKey,
     error,
     refresh: load,
     updateSetting,

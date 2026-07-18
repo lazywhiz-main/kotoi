@@ -32,6 +32,7 @@ export default function HomeScreen() {
   const { notes, loading, error, refresh } = useNotes(user?.id);
   const { deleteNote, deleting, error: deleteError, clearError: clearDeleteError } = useDeleteNote();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
   const {
     ready: homeTutorialReady,
     seen: homeTutorialSeen,
@@ -48,6 +49,15 @@ export default function HomeScreen() {
       void refresh();
     }, [refresh]),
   );
+
+  const onPullRefresh = useCallback(async () => {
+    setPullRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setPullRefreshing(false);
+    }
+  }, [refresh]);
 
   useEffect(() => {
     if (!isEmpty && homeTutorialReady && !homeTutorialSeen) {
@@ -99,13 +109,14 @@ export default function HomeScreen() {
         ) : (
           <FlatList
             automaticallyAdjustKeyboardInsets
+            contentInsetAdjustmentBehavior="never"
             contentContainerStyle={styles.list}
             data={notes}
             keyExtractor={(item) => item.id}
             keyboardDismissMode="interactive"
             keyboardShouldPersistTaps="handled"
             refreshControl={
-              <RefreshControl refreshing={loading || deleting} onRefresh={() => void refresh()} />
+              <RefreshControl refreshing={pullRefreshing} onRefresh={() => void onPullRefresh()} />
             }
             ListEmptyComponent={
               <EmptyState

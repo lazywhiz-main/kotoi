@@ -285,6 +285,13 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 1
 
+# RevenueCat は JWT ではなく共有 Authorization を送る。ゲートの JWT 検証を切る。
+[functions.revenuecat-webhook]
+verify_jwt = false
+
+[functions.schedule-daily-questions]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

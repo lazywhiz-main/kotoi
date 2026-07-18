@@ -1,6 +1,8 @@
 /**
  * 到達トライアル / 見取り図枠の判定（クライアント・ドキュメント用）。
  * Edge 側の正本は supabase/functions/_shared/entitlements.ts
+ *
+ * 無料1枠は「成功して渡した」ときだけ消費。失敗（error）は未消費。
  */
 
 export type TrialState = 'active' | 'achieved' | 'expired' | 'subscribed' | 'read_only';

@@ -80,6 +80,8 @@ export function isNoteStillGrowing(options: {
   type: string | null;
   isVideo: boolean;
   transcriptStatus: ItemStatus | null;
+  articleStatus?: ItemStatus | null;
+  hasArticleUrl?: boolean;
   anchor: string | null | undefined;
   createdAt?: string | null;
   /** 完了した要約・問いがあるか（pending のみは育っていない） */
@@ -88,9 +90,20 @@ export function isNoteStillGrowing(options: {
   if (!options.type) {
     return !isPastStuckWindow(options.createdAt ?? options.anchor);
   }
+  // 問い・要約を付けない類型は、分類が付いた時点で育ち終わり
+  if (options.type === 'task' || options.type === 'ref') {
+    return false;
+  }
   if (options.hasDoneThreadContent) return false;
   if (isPastStuckWindow(options.anchor)) return false;
   if (isTranscriptProcessing(options.transcriptStatus, options.isVideo, options.anchor)) {
+    return true;
+  }
+  if (
+    options.hasArticleUrl &&
+    options.articleStatus === 'pending' &&
+    !isPastStuckWindow(options.anchor)
+  ) {
     return true;
   }
   return true;
@@ -105,6 +118,23 @@ export function isVideoPipelineIncomplete(options: {
 }): boolean {
   if (!options.isVideo || !options.type) return false;
   if (options.type === 'task' || options.type === 'ref') return false;
+  if (options.hasDoneQuestion) return false;
+  return isPastStuckWindow(options.anchor);
+}
+
+/**
+ * 問いを付けるべきメモ（seed/learn/feeling）で、問いが無く処理が止まったとき。
+ * 一覧の「開いて再取得」と詳細の再取得ボタンを揃える。
+ */
+export function isQuestionPipelineIncomplete(options: {
+  type: string | null;
+  hasDoneQuestion: boolean;
+  anchor?: string | null;
+}): boolean {
+  if (!options.type) return false;
+  if (options.type !== 'seed' && options.type !== 'learn' && options.type !== 'feeling') {
+    return false;
+  }
   if (options.hasDoneQuestion) return false;
   return isPastStuckWindow(options.anchor);
 }

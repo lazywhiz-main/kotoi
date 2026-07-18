@@ -10,11 +10,14 @@ export async function sendPushToUser(
   db: SupabaseClient,
   userId: string,
   payload: PushPayload,
-  settingKey: 'notify_agent_done' | 'notify_weekly_review' = 'notify_agent_done',
+  settingKey:
+    | 'notify_agent_done'
+    | 'notify_weekly_review'
+    | 'notify_daily_question' = 'notify_agent_done',
 ): Promise<void> {
   const { data: settings } = await db
     .from('user_settings')
-    .select('notify_agent_done, notify_weekly_review')
+    .select('notify_agent_done, notify_weekly_review, notify_daily_question')
     .eq('user_id', userId)
     .maybeSingle();
 

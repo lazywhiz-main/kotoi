@@ -401,7 +401,7 @@ function createStyles(colors: ColorPalette) {
     fontWeight: '600',
   },
   subthemeCountBadge: {
-    backgroundColor: '#f6f4ee',
+    backgroundColor: colors.input,
     borderRadius: 10,
     paddingHorizontal: 7,
     paddingVertical: 2,

@@ -1,6 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import { isOpeningCompleted, setOpeningCompleted, clearOpeningCompleted } from '@/lib/opening/storage';
+import {
+  clearPassedOpeningThisLaunch,
+  hasPassedOpeningThisLaunch,
+  markPassedOpeningThisLaunch,
+} from '@/lib/opening/launchPass';
+import { setOpeningLogoutHandler } from '@/lib/opening/logoutBridge';
+import { clearOpeningCompleted, setOpeningCompleted } from '@/lib/opening/storage';
+import { useAuth } from '@/providers/AuthProvider';
 
 type OpeningGateContextValue = {
   completed: boolean | null;
@@ -13,29 +20,70 @@ type OpeningGateContextValue = {
 
 const OpeningGateContext = createContext<OpeningGateContextValue | null>(null);
 
+const STABLE_SESSION_MS = 2500;
+
 export function OpeningGateProvider({ children }: { children: React.ReactNode }) {
-  const [completed, setCompleted] = useState<boolean | null>(null);
+  const { session, loading: authLoading } = useAuth();
+  const [passedOpening, setPassedOpening] = useState(hasPassedOpeningThisLaunch);
   const [justFinished, setJustFinished] = useState(false);
+  const sessionBecameAtRef = useRef<number | null>(null);
 
   useEffect(() => {
-    void isOpeningCompleted().then(setCompleted);
+    if (authLoading) return;
+
+    if (session) {
+      if (sessionBecameAtRef.current == null) {
+        sessionBecameAtRef.current = Date.now();
+      }
+      return;
+    }
+
+    const becameAt = sessionBecameAtRef.current;
+    sessionBecameAtRef.current = null;
+
+    if (becameAt != null && Date.now() - becameAt >= STABLE_SESSION_MS) {
+      clearPassedOpeningThisLaunch();
+      setPassedOpening(false);
+      setJustFinished(false);
+      void clearOpeningCompleted();
+    }
+  }, [authLoading, session]);
+
+  const resetOpening = useCallback(async () => {
+    sessionBecameAtRef.current = null;
+    clearPassedOpeningThisLaunch();
+    setPassedOpening(false);
+    setJustFinished(false);
+    await clearOpeningCompleted();
+  }, []);
+
+  useEffect(() => {
+    setOpeningLogoutHandler(() => {
+      sessionBecameAtRef.current = null;
+      clearPassedOpeningThisLaunch();
+      setPassedOpening(false);
+      setJustFinished(false);
+      void clearOpeningCompleted();
+    });
+    return () => setOpeningLogoutHandler(null);
   }, []);
 
   const markCompleted = useCallback(async () => {
-    setCompleted(true);
+    markPassedOpeningThisLaunch();
+    setPassedOpening(true);
     setJustFinished(true);
     await setOpeningCompleted();
-  }, []);
-
-  const resetOpening = useCallback(async () => {
-    await clearOpeningCompleted();
-    setCompleted(false);
-    setJustFinished(false);
   }, []);
 
   const clearWelcome = useCallback(() => {
     setJustFinished(false);
   }, []);
+
+  const completed: boolean | null = authLoading
+    ? null
+    : session != null || passedOpening
+      ? true
+      : false;
 
   const value = useMemo<OpeningGateContextValue>(
     () => ({

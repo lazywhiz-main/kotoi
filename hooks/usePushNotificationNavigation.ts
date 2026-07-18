@@ -22,6 +22,10 @@ export function usePushNotificationNavigation(enabled: boolean) {
       }
       if (data?.screen === 'explorations') {
         router.push('/(tabs)/explorations');
+        return;
+      }
+      if (data?.screen === 'shelf') {
+        router.push('/(tabs)/shelf');
       }
     });
 

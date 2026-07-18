@@ -1,4 +1,4 @@
-import { Stack, Redirect, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -12,7 +12,16 @@ import { ThemeProvider, useColors, useTheme } from '@/providers/ThemeProvider';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
+/**
+ * 無限ループの真因:
+ * opening 完了時に <Redirect> だけを返すと Stack がアンマウントされ、
+ * 再マウント時に Stack 先頭の `opening` に戻ってしまう。
+ * → 完了と同時にまた opening が表示される。
+ *
+ * 対策: Stack は常にマウントし、遷移は router.replace のみ。
+ */
 function RootNavigator() {
+  const router = useRouter();
   const { session, loading, configured, passwordOfferPending } = useAuth();
   const { completed: openingCompleted, loading: openingLoading } = useOpeningGate();
   const colors = useColors();
@@ -34,6 +43,57 @@ function RootNavigator() {
     }
   }, [ready]);
 
+  useEffect(() => {
+    if (!ready) return;
+
+    if (openingCompleted === false && !onOpening && !inDev) {
+      router.replace('/opening');
+      return;
+    }
+
+    if (openingCompleted === true && onOpening) {
+      if (!configured || !session) {
+        router.replace('/(auth)/login');
+        return;
+      }
+      if (passwordOfferPending) {
+        router.replace('/password-offer');
+        return;
+      }
+      router.replace('/(tabs)');
+      return;
+    }
+
+    if (openingCompleted !== true) return;
+
+    if (!configured || !session) {
+      if (!inAuthGroup && !inDev && !onOpening) {
+        router.replace('/(auth)/login');
+      }
+      return;
+    }
+
+    if (passwordOfferPending) {
+      if (!onPasswordOffer) router.replace('/password-offer');
+      return;
+    }
+
+    if (onPasswordOffer || inAuthGroup) {
+      router.replace('/(tabs)');
+    }
+  }, [
+    ready,
+    openingCompleted,
+    onOpening,
+    inAuthGroup,
+    inDev,
+    onPasswordOffer,
+    configured,
+    session,
+    passwordOfferPending,
+    router,
+  ]);
+
   if (!ready) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.bg }]}>
@@ -41,36 +101,6 @@ function RootNavigator() {
         <ActivityIndicator color={colors.accent} size="large" />
       </View>
     );
-  }
-
-  if (openingCompleted === false && !onOpening && !inDev) {
-    return <Redirect href="/opening" />;
-  }
-
-  if (openingCompleted === true && onOpening) {
-    if (!configured || !session) {
-      return <Redirect href="/(auth)/login" />;
-    }
-    if (passwordOfferPending) {
-      return <Redirect href="/password-offer" />;
-    }
-    return <Redirect href="/(tabs)" />;
-  }
-
-  if (openingCompleted === true) {
-    if (!configured || !session) {
-      if (!inAuthGroup && !inDev) {
-        return <Redirect href="/(auth)/login" />;
-      }
-    } else if (passwordOfferPending) {
-      if (!onPasswordOffer) {
-        return <Redirect href="/password-offer" />;
-      }
-    } else if (onPasswordOffer) {
-      return <Redirect href="/(tabs)" />;
-    } else if (inAuthGroup) {
-      return <Redirect href="/(tabs)" />;
-    }
   }
 
   return (
@@ -98,7 +128,7 @@ function RootNavigator() {
         />
         <Stack.Screen
           name="note/transcript/[id]"
-          options={{ title: '文字起こし', headerBackTitle: '育つスレッド' }}
+          options={{ title: '全文', headerBackTitle: '育つスレッド' }}
         />
         <Stack.Screen name="exploration/[id]" options={{ title: '問いの地図', headerBackTitle: '探究' }} />
         <Stack.Screen name="settings" options={{ title: '設定', headerBackTitle: 'ホーム' }} />

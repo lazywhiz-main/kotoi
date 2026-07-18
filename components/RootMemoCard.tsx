@@ -9,8 +9,14 @@ import { useRetryNotePipeline } from '@/hooks/useRetryTranscript';
 import { noteHasLinkPreview, previewFromNote } from '@/lib/linkPreview';
 import { getNoteTypeColors, type ColorPalette } from '@/lib/theme';
 import {
+  articleStatusLabel,
+  isArticlePipelineIncomplete,
+  noteLooksLikeArticle,
+} from '@/lib/article';
+import {
   transcriptStatusLabel,
   isVideoPipelineIncomplete,
+  isQuestionPipelineIncomplete,
   isClassifyStuck,
   isClassifyProcessing,
   videoPipelineAnchor,
@@ -68,20 +74,51 @@ export function RootMemoCard({
     : { text: colors.sub, bg: colors.cardElevated };
   const linkPreview = previewFromNote(note);
   const showLinkPreview = note.source_url && (noteHasLinkPreview(note) || !note.type);
+  const looksLikeArticle = noteLooksLikeArticle(note);
+  const pipelineAnchor = videoPipelineAnchor(note);
   const transcriptLabel = transcriptStatusLabel(
     note.transcript_status,
     note.is_video,
-    videoPipelineAnchor(note),
+    pipelineAnchor,
+  );
+  const articleLabel = articleStatusLabel(
+    note.article_status,
+    looksLikeArticle,
+    pipelineAnchor,
   );
   const hasTranscript = note.transcript_status === 'done' && !!note.video_transcript?.trim();
-  const pipelineIncomplete = isVideoPipelineIncomplete({
-    isVideo: note.is_video,
-    type: note.type,
-    hasDoneQuestion,
-    anchor: videoPipelineAnchor(note),
-  });
+  const hasArticle = note.article_status === 'done' && !!note.article_body?.trim();
+  const pipelineIncomplete =
+    isVideoPipelineIncomplete({
+      isVideo: note.is_video,
+      type: note.type,
+      hasDoneQuestion,
+      anchor: pipelineAnchor,
+    }) ||
+    isArticlePipelineIncomplete({
+      hasArticleUrl: looksLikeArticle,
+      type: note.type,
+      hasDoneQuestion,
+      anchor: pipelineAnchor,
+    }) ||
+    isQuestionPipelineIncomplete({
+      type: note.type,
+      hasDoneQuestion,
+      anchor: pipelineAnchor,
+    });
   const showRetry =
-    classifyStuck || note.transcript_status === 'error' || pipelineIncomplete;
+    classifyStuck ||
+    note.transcript_status === 'error' ||
+    note.article_status === 'error' ||
+    pipelineIncomplete;
+  const questionStuckOnly =
+    isQuestionPipelineIncomplete({
+      type: note.type,
+      hasDoneQuestion,
+      anchor: pipelineAnchor,
+    }) &&
+    !note.is_video &&
+    !looksLikeArticle;
 
   return (
     <View style={styles.memo}>
@@ -127,16 +164,23 @@ export function RootMemoCard({
           isVideo={note.is_video}
         />
       ) : null}
-      {transcriptLabel || showRetry || classifyStuck ? (
+      {transcriptLabel || articleLabel || showRetry || classifyStuck ? (
         <View style={styles.transcriptRow}>
           {classifyStuck ? (
             <Text style={styles.transcriptMeta}>分類が途中で止まっています</Text>
           ) : null}
           {transcriptLabel ? <Text style={styles.transcriptMeta}>{transcriptLabel}</Text> : null}
-          {pipelineIncomplete && note.transcript_status !== 'error' ? (
+          {articleLabel ? <Text style={styles.transcriptMeta}>{articleLabel}</Text> : null}
+          {questionStuckOnly ? (
+            <Text style={styles.transcriptMeta}>問いの生成が途中で止まっています</Text>
+          ) : null}
+          {pipelineIncomplete &&
+          !questionStuckOnly &&
+          note.transcript_status !== 'error' &&
+          note.article_status !== 'error' ? (
             <Text style={styles.transcriptMeta}>スレッドの生成が途中です</Text>
           ) : null}
-          {hasTranscript ? (
+          {hasTranscript || hasArticle ? (
             <Link href={`/note/transcript/${note.id}`} asChild>
               <Pressable style={styles.retryBtn}>
                 <Text style={styles.retryText}>全文を見る</Text>

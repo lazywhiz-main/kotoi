@@ -21,32 +21,115 @@ const SAFETY_DAYS = 90;
 const SAFETY_NOTES = 60;
 const SAFETY_COST_USD = 2;
 
+/** 無料1枠を「使い切った」とみなす状態（成功して渡したもの） */
+function isSuccessfulGiftStatus(
+  status: string | null | undefined,
+  storagePath: string | null | undefined,
+): boolean {
+  return status === 'done' || status === 'stale' || !!storagePath;
+}
+
 export function entitlementOf(sub: Pick<SubscriptionRow, 'trial_state'>): Entitlement {
   if (sub.trial_state === 'subscribed') return 'full';
   if (sub.trial_state === 'active' || sub.trial_state === 'achieved') return 'full';
   return 'read_only';
 }
 
+/** 見取り図の新規生成。同探究の更新は free 枠の延長として allow。 */
 export function canStartGraphicRec(
   sub: Pick<SubscriptionRow, 'trial_state' | 'free_graphic_rec_exploration_id'>,
   explorationId: string,
 ): GraphicRecGate {
   if (sub.trial_state === 'subscribed') return 'allow';
 
-  // 無料1枠が未使用なら、安全弁後でも1枚目は渡す
+  // 無料1枠未使用（成功記録なし）なら、安全弁後でも1枚目は渡す
   if (!sub.free_graphic_rec_exploration_id) return 'allow';
 
   // 同探究の作り直し／stale 更新は1枠の延長
   if (sub.free_graphic_rec_exploration_id === explorationId) return 'allow';
 
-  // 2枚目を押したときは常にペイウォール（安全弁後の自動ポップとは別）
+  // 2枚目を押したときは常にペイウォール
   return 'paywall';
 }
 
+async function countSuccessfulGifts(
+  db: SupabaseClient,
+  userId: string,
+): Promise<number> {
+  const { count, error } = await db
+    .from('explorations')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .or(
+      'graphic_rec_status.eq.done,graphic_rec_status.eq.stale,graphic_rec_storage_path.not.is.null',
+    );
+  if (error) throw error;
+  return count ?? 0;
+}
+
+async function countBlockingOthers(
+  db: SupabaseClient,
+  userId: string,
+  explorationId: string,
+): Promise<number> {
+  // 他探究の「成功」または「生成中」は2枚目扱い。error は含めない（失敗は枠未消費）
+  const { count, error } = await db
+    .from('explorations')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .neq('id', explorationId)
+    .or(
+      'graphic_rec_status.eq.done,graphic_rec_status.eq.stale,graphic_rec_status.eq.pending,graphic_rec_storage_path.not.is.null',
+    );
+  if (error) throw error;
+  return count ?? 0;
+}
+
 /**
- * サーバ正本。DB上の完成見取り図の有無で1枚目を判定する。
- * free_graphic_rec_exploration_id だけだと、バックフィル食い違いで
- * 「この画面では未作成なのに弾かれる」が起きる。
+ * 成功した見取り図が1枚も無いのに free / achieved が残っていたら戻す。
+ * （失敗後・データ不整合の修復）
+ */
+export async function reconcileFreeGraphicSlot(
+  db: SupabaseClient,
+  userId: string,
+): Promise<SubscriptionRow> {
+  const sub = await ensureSubscription(db, userId);
+  if (sub.trial_state === 'subscribed') return sub;
+
+  const successful = await countSuccessfulGifts(db, userId);
+  if (successful > 0) return sub;
+
+  const needsClear =
+    !!sub.free_graphic_rec_exploration_id || sub.trial_state === 'achieved';
+  if (!needsClear) return sub;
+
+  const patch: Record<string, unknown> = {
+    free_graphic_rec_exploration_id: null,
+  };
+  // 成功ゼロなのに achieved だけ残っているのは失敗後の食い違い
+  if (sub.trial_state === 'achieved') {
+    patch.trial_state = 'active';
+    patch.trial_achieved_at = null;
+  }
+
+  const { data: updated, error } = await db
+    .from('subscriptions')
+    .update(patch)
+    .eq('user_id', userId)
+    .select(
+      'user_id, trial_state, trial_started_at, trial_achieved_at, paywall_shown_at, free_graphic_rec_exploration_id, plan, current_period_start, current_period_end',
+    )
+    .single();
+  if (error) throw error;
+  return updated as SubscriptionRow;
+}
+
+/**
+ * サーバ正本。
+ *
+ * - 無料1枠は「成功して渡した」ときだけ消費（done / stale / storage）
+ * - error は未消費。同じ／別探究でやり直せる
+ * - 他探究が pending のあいだは2枚目開始を止め、レースを防ぐ
  */
 export async function assertGraphicRecAllowed(
   db: SupabaseClient,
@@ -56,7 +139,7 @@ export async function assertGraphicRecAllowed(
   | { ok: true; sub: SubscriptionRow }
   | { ok: false; code: 'paywall_required' | 'read_only'; sub: SubscriptionRow }
 > {
-  const sub = await ensureSubscription(db, userId);
+  let sub = await reconcileFreeGraphicSlot(db, userId);
   if (sub.trial_state === 'subscribed') return { ok: true, sub };
 
   const { data: exploration, error: explorationError } = await db
@@ -70,46 +153,31 @@ export async function assertGraphicRecAllowed(
     return { ok: false, code: 'read_only', sub };
   }
 
-  const thisAlreadyGifted =
-    exploration.graphic_rec_status === 'done' ||
-    exploration.graphic_rec_status === 'stale' ||
-    !!exploration.graphic_rec_storage_path;
-
-  // 同探究の更新は常に可（安全弁後も、渡した1枚の延長）
-  if (thisAlreadyGifted) return { ok: true, sub };
-
-  const { count: giftedCount, error: countError } = await db
-    .from('explorations')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .or(
-      'graphic_rec_status.eq.done,graphic_rec_status.eq.stale,graphic_rec_storage_path.not.is.null',
-    );
-  if (countError) throw countError;
-
-  // アカウントでまだ1枚も受け取っていない → 安全弁後でも1枚目を渡す
-  if ((giftedCount ?? 0) === 0) {
-    if (sub.free_graphic_rec_exploration_id) {
-      await db
-        .from('subscriptions')
-        .update({ free_graphic_rec_exploration_id: null })
-        .eq('user_id', userId);
-      sub.free_graphic_rec_exploration_id = null;
-    }
+  // 同探究にすでに渡した見取り図がある → 更新・作り直しは常に可
+  if (
+    isSuccessfulGiftStatus(
+      exploration.graphic_rec_status,
+      exploration.graphic_rec_storage_path,
+    )
+  ) {
     return { ok: true, sub };
   }
 
-  // すでに他探究で受け取っている＝2枚目。ユーザーが生成を押した操作なのでペイウォールへ。
-  // （安全弁の自動ポップとは別。意図した「続き」の入口）
-  const now = new Date().toISOString();
-  if (!sub.paywall_shown_at) {
-    await db
-      .from('subscriptions')
-      .update({ paywall_shown_at: now })
-      .eq('user_id', userId);
-    sub.paywall_shown_at = now;
+  const blockingOthers = await countBlockingOthers(db, userId, explorationId);
+  if (blockingOthers > 0) {
+    const now = new Date().toISOString();
+    if (!sub.paywall_shown_at) {
+      await db
+        .from('subscriptions')
+        .update({ paywall_shown_at: now })
+        .eq('user_id', userId);
+      sub = { ...sub, paywall_shown_at: now };
+    }
+    return { ok: false, code: 'paywall_required', sub };
   }
-  return { ok: false, code: 'paywall_required', sub };
+
+  // 成功も他探究の pending もない → まだ1枚目の権利あり（error 後の再挑戦含む）
+  return { ok: true, sub };
 }
 
 export async function ensureSubscription(
@@ -197,7 +265,7 @@ export async function assertWritableEntitlement(
   return { ok: true, sub };
 }
 
-/** 1枚目が done になったとき呼ぶ。安全弁後でも枠を消費記録する。 */
+/** 1枚目が done になったときだけ呼ぶ。失敗では呼ばない。 */
 export async function recordFirstGraphicRecDone(
   db: SupabaseClient,
   userId: string,
@@ -220,5 +288,16 @@ export async function recordFirstGraphicRecDone(
       trial_state: nextState,
       trial_achieved_at: sub.trial_achieved_at ?? now,
     })
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .is('free_graphic_rec_exploration_id', null);
+}
+
+/**
+ * 生成失敗時。成功した見取り図がまだ無ければ無料枠を未使用に戻す。
+ */
+export async function releaseFreeGraphicSlotOnFailure(
+  db: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  await reconcileFreeGraphicSlot(db, userId);
 }

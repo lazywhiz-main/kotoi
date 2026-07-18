@@ -1,7 +1,7 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 import { callAnthropicJsonWithUsage } from './anthropic.ts';
-import { recordFirstGraphicRecDone } from './entitlements.ts';
+import { recordFirstGraphicRecDone, releaseFreeGraphicSlotOnFailure } from './entitlements.ts';
 import { buildGraphicRecBatchSystem, GRAPHIC_REC_PROMPT_VERSION } from './graphicRecPrompt.ts';
 import { estimateOpenAiImageCostUsd, generateOpenAiImage } from './openaiImage.ts';
 import { graphicRecBatchResultSchema } from './schemas.ts';
@@ -242,6 +242,15 @@ export async function executeGraphicRecJob(
       })
       .eq('id', explorationId)
       .eq('user_id', userId);
+    // 失敗は無料1枠を消費しない（成功ゼロなら free / achieved を戻す）
+    try {
+      await releaseFreeGraphicSlotOnFailure(db, userId);
+    } catch (releaseErr) {
+      console.error(
+        'releaseFreeGraphicSlotOnFailure error:',
+        releaseErr instanceof Error ? releaseErr.message : String(releaseErr),
+      );
+    }
     console.error('executeGraphicRecJob error:', message);
   }
 }

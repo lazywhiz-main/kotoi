@@ -21,7 +21,7 @@ function formatCharCount(length: number): string {
   return `${length}字`;
 }
 
-export default function TranscriptScreen() {
+export default function SourceBodyScreen() {
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,22 +43,32 @@ export default function TranscriptScreen() {
     );
   }
 
-  const title = note.source_title ?? note.video_title ?? '動画';
-  const transcript = note.video_transcript?.trim();
+  const isArticle = !note.is_video && !!note.article_body?.trim();
+  const title = note.source_title ?? note.video_title ?? (isArticle ? '記事' : '動画');
+  const body = (isArticle ? note.article_body : note.video_transcript)?.trim();
+  const pending = isArticle
+    ? note.article_status === 'pending'
+    : note.transcript_status === 'pending';
 
-  if (!transcript) {
+  if (!body) {
     return (
       <View style={styles.center}>
         <EmptyState
           title={
-            note.transcript_status === 'pending'
-              ? '文字起こしを取得中'
-              : '文字起こしがありません'
+            pending
+              ? isArticle
+                ? '記事を読み取り中'
+                : '文字起こしを取得中'
+              : isArticle
+                ? '記事本文がありません'
+                : '文字起こしがありません'
           }
           description={
-            note.transcript_status === 'pending'
+            pending
               ? '完了すると全文をここで読めます。'
-              : 'この動画は字幕取得に対応していない可能性があります。'
+              : isArticle
+                ? 'このページから本文を抽出できませんでした。'
+                : 'この動画は字幕取得に対応していない可能性があります。'
           }
         />
       </View>
@@ -69,10 +79,13 @@ export default function TranscriptScreen() {
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.meta}>{formatCharCount(transcript.length)}</Text>
+        <Text style={styles.meta}>
+          {isArticle ? '記事本文 · ' : '文字起こし · '}
+          {formatCharCount(body.length)}
+        </Text>
         <View style={styles.bodyCard}>
           <Text selectable style={styles.body}>
-            {transcript}
+            {body}
           </Text>
         </View>
       </ScrollView>

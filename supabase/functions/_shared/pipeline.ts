@@ -2,6 +2,7 @@ import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 import { callAnthropicJsonWithUsage } from './anthropic.ts';
 import {
+  GENERATE_FEELING_QUESTION_RETRY_SYSTEM,
   GENERATE_INITIAL_QUESTION_SYSTEM,
   GENERATE_MORE_QUESTION_SYSTEM,
   SUMMARIZE_SYSTEM,
@@ -14,6 +15,7 @@ import {
   type GenerateQuestionsResult,
   type SummarizeResult,
 } from './schemas.ts';
+import { articleBodyForAi } from './articleBody.ts';
 import { recordUsage } from './usageLedger.ts';
 import { AI_TRANSCRIPT_CHARS } from './youtubeTranscript.ts';
 
@@ -28,6 +30,8 @@ type NoteRow = {
   video_title: string | null;
   video_transcript: string | null;
   transcript_status: string | null;
+  article_body?: string | null;
+  article_status?: string | null;
 };
 
 function transcriptForAi(note: NoteRow): string | undefined {
@@ -35,6 +39,13 @@ function transcriptForAi(note: NoteRow): string | undefined {
   if (!text) return undefined;
   if (text.length <= AI_TRANSCRIPT_CHARS) return text;
   return `${text.slice(0, AI_TRANSCRIPT_CHARS)}\n…（以下省略）`;
+}
+
+function summarizePendingLabel(note: NoteRow): string {
+  if (note.is_video && note.video_transcript) return '文字起こし要約中…';
+  if (note.article_body?.trim()) return '記事要約中…';
+  if (note.article_status === 'pending') return '記事を読み取り中…';
+  return '要約中…';
 }
 
 export function formatSummaryBody(result: SummarizeResult): string {
@@ -53,7 +64,7 @@ export async function runSummarizeNote(
       user_id: note.user_id,
       author: 'ai',
       kind: 'summary',
-      body: note.is_video && note.video_transcript ? '文字起こし要約中…' : '要約中…',
+      body: summarizePendingLabel(note),
       status: 'pending',
     })
     .select('id')
@@ -67,7 +78,9 @@ export async function runSummarizeNote(
       JSON.stringify({
         raw_text: note.raw_text,
         video_transcript: transcriptForAi(note),
+        article_body: articleBodyForAi(note.article_body),
         source_url: note.source_url ?? undefined,
+        source_title: note.source_title ?? note.video_title ?? undefined,
       }),
       summarizeResultSchema,
     );
@@ -216,36 +229,54 @@ export async function runGenerateQuestions(
 
   try {
     const recentMemos = await loadRecentMemos(db, note);
+    const userPayload = JSON.stringify({
+      raw_text: note.raw_text,
+      summary: summary ?? undefined,
+      type: note.type,
+      recent_memos: recentMemos,
+    });
 
-    const { data: raw, inputTokens, outputTokens } = await callAnthropicJsonWithUsage(
+    let inputTokens = 0;
+    let outputTokens = 0;
+
+    const first = await callAnthropicJsonWithUsage(
       GENERATE_INITIAL_QUESTION_SYSTEM,
-      JSON.stringify({
-        raw_text: note.raw_text,
-        summary: summary ?? undefined,
-        type: note.type,
-        recent_memos: recentMemos,
-      }),
+      userPayload,
       generateQuestionsResultSchema,
     );
+    inputTokens += first.inputTokens;
+    outputTokens += first.outputTokens;
 
-    const result =
+    let questions =
       note.type === 'feeling'
-        ? {
-            questions: raw.questions
-              .filter((q) => q.question_type !== 'ref')
-              .slice(0, 1),
-          }
-        : { questions: raw.questions.slice(0, 1) };
+        ? first.data.questions.filter((q) => q.question_type !== 'ref').slice(0, 1)
+        : first.data.questions.slice(0, 1);
+
+    // feeling: 反証(ref)だけ返ってフィルタで空になったときは、ref禁止で1回だけ再試行
+    if (note.type === 'feeling' && questions.length === 0) {
+      const retry = await callAnthropicJsonWithUsage(
+        GENERATE_FEELING_QUESTION_RETRY_SYSTEM,
+        userPayload,
+        generateQuestionsResultSchema,
+      );
+      inputTokens += retry.inputTokens;
+      outputTokens += retry.outputTokens;
+      questions = retry.data.questions
+        .filter((q) => q.question_type !== 'ref')
+        .slice(0, 1);
+    }
+
+    const result = { questions };
 
     if (result.questions.length === 0) {
       await db.from('thread_items').delete().eq('id', pendingId);
     } else {
-      const [first, ...rest] = result.questions;
+      const [firstQ, ...rest] = result.questions;
       await db
         .from('thread_items')
         .update({
-          body: first.body,
-          question_type: first.question_type,
+          body: firstQ.body,
+          question_type: firstQ.question_type,
           status: 'done',
         })
         .eq('id', pendingId);
@@ -265,6 +296,19 @@ export async function runGenerateQuestions(
   }
 }
 
+async function countDoneQuestions(db: SupabaseClient, noteId: string): Promise<number> {
+  const { count } = await db
+    .from('thread_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('note_id', noteId)
+    .eq('kind', 'question')
+    .eq('status', 'done');
+  return count ?? 0;
+}
+
+/** feeling の問い上限（クライアント lib/feelingQuestions.ts と同値） */
+const FEELING_MAX_QUESTIONS = 3;
+
 export async function runGenerateMoreQuestion(
   db: SupabaseClient,
   note: NoteRow,
@@ -274,6 +318,13 @@ export async function runGenerateMoreQuestion(
     return { questions: [] };
   }
 
+  if (note.type === 'feeling') {
+    const doneCount = await countDoneQuestions(db, note.id);
+    if (doneCount >= FEELING_MAX_QUESTIONS) {
+      return { questions: [] };
+    }
+  }
+
   const existingQuestions = await loadThreadQuestions(db, note.id);
   const thoughtsByQuestion = await loadThoughtsByQuestion(
     db,
@@ -281,24 +332,45 @@ export async function runGenerateMoreQuestion(
     existingQuestions.map((q) => q.id),
   );
 
-  const { data: raw, inputTokens, outputTokens } = await callAnthropicJsonWithUsage(
+  const userPayload = JSON.stringify({
+    raw_text: note.raw_text,
+    summary: summary ?? undefined,
+    type: note.type,
+    existing_questions: existingQuestions.map((q) => ({
+      question_type: q.question_type,
+      body: q.body,
+      user_thoughts: thoughtsByQuestion.get(q.id) ?? [],
+    })),
+  });
+
+  let inputTokens = 0;
+  let outputTokens = 0;
+
+  const first = await callAnthropicJsonWithUsage(
     GENERATE_MORE_QUESTION_SYSTEM,
-    JSON.stringify({
-      raw_text: note.raw_text,
-      summary: summary ?? undefined,
-      type: note.type,
-      existing_questions: existingQuestions.map((q) => ({
-        question_type: q.question_type,
-        body: q.body,
-        user_thoughts: thoughtsByQuestion.get(q.id) ?? [],
-      })),
-    }),
+    userPayload,
     generateMoreQuestionResultSchema,
   );
+  inputTokens += first.inputTokens;
+  outputTokens += first.outputTokens;
 
-  let question = raw.question ?? null;
+  let question = first.data.question ?? null;
   if (note.type === 'feeling' && question?.question_type === 'ref') {
     question = null;
+  }
+
+  if (note.type === 'feeling' && !question) {
+    const retry = await callAnthropicJsonWithUsage(
+      GENERATE_FEELING_QUESTION_RETRY_SYSTEM,
+      userPayload,
+      generateQuestionsResultSchema,
+    );
+    inputTokens += retry.inputTokens;
+    outputTokens += retry.outputTokens;
+    const picked = retry.data.questions
+      .filter((q) => q.question_type !== 'ref')
+      .slice(0, 1)[0];
+    question = picked ?? null;
   }
 
   if (!question) {

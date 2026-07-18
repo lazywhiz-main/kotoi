@@ -211,6 +211,11 @@ TestFlight では `__DEV__` リンク（オープニング再表示など）は�
 
 詳細は `cursor-handoff/06_build-roadmap.md` を参照。
 
+## 運用・環境
+
+- **環境分離・テスター・公開後体制（採用方針）**: [docs/plan-environments-and-testers.md](./docs/plan-environments-and-testers.md)
+- **セキュリティ自己チェック**: [docs/security/README.md](./docs/security/README.md)
+
 ## 仕様
 
 プロダクト仕様・AI プロンプト・画面モックは `cursor-handoff/` にあります。

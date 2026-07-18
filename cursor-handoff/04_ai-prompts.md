@@ -65,7 +65,7 @@ System:
 - 5つ全部を無理に埋めない。刺さらない類型は省く（3個でもよい）。
 - 1問は1文。問いで終える。
 - task type のメモには問いを作らない（空配列）。
-- feeling type には、分析や反証をせず、そっと置く振り返りの問いを最大1つだけ。
+- feeling type には、分析や反証をせず、そっと置く振り返りの問いを最大3つまで。
 出力はJSONのみ。
 ```
 User: `{ raw_text, summary?, type, recent_memos?: [{id, raw_text}], parent_item?: {question_type, body} }`

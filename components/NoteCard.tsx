@@ -4,6 +4,7 @@ import { SymbolView } from 'expo-symbols';
 
 import { LinkPreviewCard } from '@/components/LinkPreviewCard';
 import { confirmDeleteNotePrompt } from '@/components/RootMemoCard';
+import { noteLooksLikeArticle } from '@/lib/article';
 import { getLinkTitle, noteHasLinkPreview, previewFromNote } from '@/lib/linkPreview';
 import { formatNoteListStats, formatNoteThreadGlimpse } from '@/lib/noteListSummary';
 import { getNoteTypeColors, type ColorPalette } from '@/lib/theme';
@@ -32,11 +33,16 @@ export function NoteCard({ note, summary, onPress, onDelete, deleting }: Props) 
     type: note.type,
     isVideo: note.is_video,
     transcriptStatus: note.transcript_status,
+    articleStatus: note.article_status,
+    hasArticleUrl: noteLooksLikeArticle(note),
     anchor: videoPipelineAnchor(note),
     createdAt: note.created_at,
     hasDoneThreadContent: summary?.hasDoneContent ?? false,
   });
-  const showIncomplete = !isGrowing && !(summary?.hasDoneContent ?? false);
+  // task / ref は問いを付けないので「途中停止」扱いにしない
+  const expectsThreadGrowth = note.type !== 'task' && note.type !== 'ref';
+  const showIncomplete =
+    expectsThreadGrowth && !isGrowing && !(summary?.hasDoneContent ?? false);
   const incompleteLabel = !note.type
     ? '分類が途中で止まりました。開いて再実行できます'
     : '処理が途中で止まりました。開いて再取得できます';

@@ -22,6 +22,8 @@ import {
   signInWithOAuthProvider,
 } from '@/lib/auth/social';
 import { getAuthRedirectUrl, getSupabase, isSupabaseConfigured } from '@/lib/supabase';
+import { identifyPurchasesUser } from '@/lib/purchases';
+import { notifyExplicitLogout } from '@/lib/opening/logoutBridge';
 
 type AuthResult = { error: string | null };
 
@@ -120,11 +122,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
+      void identifyPurchasesUser(data.session?.user?.id ?? null);
     });
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setLoading(false);
+      void identifyPurchasesUser(nextSession?.user?.id ?? null);
     });
 
     const handleUrl = (event: { url: string }) => {
@@ -341,7 +345,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    await identifyPurchasesUser(null);
     await getSupabase()?.auth.signOut();
+    notifyExplicitLogout();
   }, []);
 
   const value = useMemo<AuthContextValue>(

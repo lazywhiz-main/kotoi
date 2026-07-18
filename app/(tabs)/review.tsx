@@ -321,6 +321,7 @@ export default function ReviewScreen() {
   const showFirstSample = !review && !loading && !usingDevMock;
   const emphasizeFirstReview =
     !review && cooldown.eligible && !generating && reviewReadyVisible && !usingDevMock;
+  const [pullRefreshing, setPullRefreshing] = useState(false);
 
   useEffect(() => {
     if (reviewReadyVisible && review) {
@@ -333,6 +334,15 @@ export default function ReviewScreen() {
       void refresh();
     }, [refresh]),
   );
+
+  const onPullRefresh = useCallback(async () => {
+    setPullRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setPullRefreshing(false);
+    }
+  }, [refresh]);
 
   const handleGenerate = useCallback(() => {
     if (reviewReadyVisible) void markReviewReadySeen();
@@ -366,8 +376,11 @@ export default function ReviewScreen() {
   return (
     <View style={styles.safe}>
       <ScrollView
+        contentInsetAdjustmentBehavior="never"
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void refresh()} />}
+        refreshControl={
+          <RefreshControl refreshing={pullRefreshing} onRefresh={() => void onPullRefresh()} />
+        }
       >
         <Text style={styles.heading}>今週のふりかえり</Text>
         <Text style={styles.lead}>{review?.week_label ?? 'まだふりかえりがありません'}</Text>

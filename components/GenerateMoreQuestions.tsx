@@ -8,9 +8,11 @@ type Props = {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
+  /** 上限の明示（例: 感情メモは最大3つまで） */
+  limitHint?: string | null;
 };
 
-export function GenerateMoreQuestions({ onPress, loading, disabled }: Props) {
+export function GenerateMoreQuestions({ onPress, loading, disabled, limitHint }: Props) {
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   return (
@@ -29,6 +31,7 @@ export function GenerateMoreQuestions({ onPress, loading, disabled }: Props) {
           <Text style={styles.btnText}>もう1つ問いを生やす</Text>
         )}
       </Pressable>
+      {limitHint ? <Text style={styles.limitHint}>{limitHint}</Text> : null}
       <Text style={styles.hint}>左にスワイプすると問いをアーカイブできます</Text>
     </View>
   );
@@ -59,6 +62,12 @@ function createStyles(colors: ColorPalette) {
     color: colors.sub,
     fontSize: 15,
     fontWeight: '600',
+  },
+  limitHint: {
+    color: colors.sub,
+    fontSize: 13,
+    lineHeight: 18,
+    paddingHorizontal: 2,
   },
   hint: {
     color: colors.hint,

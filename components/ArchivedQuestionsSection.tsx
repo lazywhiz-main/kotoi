@@ -11,6 +11,7 @@ type Props = {
   noteId: string;
   noteType?: string | null;
   noteIsVideo?: boolean;
+  noteHasArticle?: boolean;
   childrenByParent: Map<string, ThreadItem[]>;
   highlightedItemId?: string | null;
   updatingId?: string | null;
@@ -36,6 +37,7 @@ export function ArchivedQuestionsSection({
   noteId,
   noteType,
   noteIsVideo,
+  noteHasArticle,
   childrenByParent,
   highlightedItemId,
   updatingId,
@@ -92,6 +94,7 @@ export function ArchivedQuestionsSection({
               registerItemRef={registerItemRef}
               childrenByParent={childrenByParent}
               noteIsVideo={noteIsVideo}
+              noteHasArticle={noteHasArticle}
               updatingQuestionId={updatingId}
               thoughtSubmittingId={thoughtSubmittingId}
               updatingThoughtId={updatingThoughtId}

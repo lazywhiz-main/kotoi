@@ -24,6 +24,8 @@ create table notes (
   video_title   text,
   video_transcript text,                       -- fetch-transcript が保存
   transcript_status item_status,              -- 動画の文字起こし状態（null=非動画）
+  article_body  text,                          -- 記事URLから抽出した本文
+  article_status item_status,                  -- 記事本文の取得状態（null=非記事）
   classified_at timestamptz,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
@@ -163,9 +165,40 @@ create policy own_note_tags on note_tags for all
 -- ============================================================
 -- 便利ビュー: 問いの棚（未回答の問い一覧）
 -- ============================================================
-create view open_questions as
+create view open_questions
+with (security_invoker = true)
+as
   select ti.id, ti.user_id, ti.note_id, ti.question_type, ti.body, ti.created_at,
          n.raw_text as note_raw, n.is_video, n.video_title
   from thread_items ti
   join notes n on n.id = ti.note_id
   where ti.kind = 'question' and ti.answered = false;
+
+-- ---- daily_question_deliveries (今日の問い / 別角度の呼び戻し) ----
+create table daily_question_deliveries (
+  id                   uuid primary key default gen_random_uuid(),
+  user_id              uuid not null references auth.users(id) on delete cascade,
+  question_type        question_type not null,
+  body                 text not null,
+  why_now              text,
+  anchor_note_id       uuid not null references notes(id) on delete cascade,
+  anchor_question_id   uuid references thread_items(id) on delete set null,
+  status               text not null default 'active'
+    check (status in ('active', 'saved', 'dismissed', 'expired')),
+  delivered_on         date not null,
+  saved_thread_item_id uuid references thread_items(id) on delete set null,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now(),
+  unique (user_id, delivered_on)
+);
+create index daily_question_deliveries_user_active_idx
+  on daily_question_deliveries (user_id, delivered_on desc)
+  where status = 'active';
+create trigger daily_question_deliveries_updated
+  before update on daily_question_deliveries
+  for each row execute function set_updated_at();
+alter table daily_question_deliveries enable row level security;
+create policy own_daily_question_deliveries on daily_question_deliveries
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- user_settings 拡張（recall_* / notify_daily_question）は migration 20260716180000 参照

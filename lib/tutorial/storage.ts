@@ -38,9 +38,14 @@ export async function clearAllTutorials(): Promise<void> {
     'exploreDone',
     'reviewReady',
   ];
+  const allKeys = await AsyncStorage.getAllKeys();
+  const enableSkipKeys = allKeys.filter((k) =>
+    k.startsWith('kotoi_daily_question_enable_skipped_'),
+  );
   await Promise.all([
     ...ids.map((id) => AsyncStorage.removeItem(keyFor(id))),
     AsyncStorage.removeItem(FIRST_EXPLORATION_ASSIGN_KEY),
+    ...enableSkipKeys.map((k) => AsyncStorage.removeItem(k)),
   ]);
 }
 

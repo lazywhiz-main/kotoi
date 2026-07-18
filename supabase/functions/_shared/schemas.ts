@@ -49,6 +49,16 @@ export const generateMoreQuestionResultSchema = z.object({
   question: generatedQuestionSchema.nullable().optional(),
 });
 
+export const dailyQuestionResultSchema = z.object({
+  anchor: z.object({
+    note_id: z.string().uuid(),
+    question_id: z.string().uuid().nullable(),
+  }),
+  question_type: questionTypeSchema,
+  body: z.string().min(1),
+  why_now: z.string().min(1),
+});
+
 export const thoughtDraftResultSchema = z.object({
   draft: z.string().min(1),
 });

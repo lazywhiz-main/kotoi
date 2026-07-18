@@ -1,4 +1,8 @@
 import { callAnthropicJsonWithUsage } from '../_shared/anthropic.ts';
+import {
+  noteWantsArticleFetch,
+  runArticleNotePipeline,
+} from '../_shared/articlePipeline.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { assertWritableEntitlement } from '../_shared/entitlements.ts';
 import { fetchLinkPreview, linkPreviewFields } from '../_shared/linkPreview.ts';
@@ -76,6 +80,10 @@ Deno.serve(async (req) => {
     }
 
     const isVideo = classified.is_video && !!sourceUrl && isYouTubeUrl(sourceUrl);
+    const wantsArticle = noteWantsArticleFetch({
+      source_url: sourceUrl,
+      type: classified.type,
+    });
 
     const { data: updatedNote, error: updateError } = await db
       .from('notes')
@@ -84,6 +92,7 @@ Deno.serve(async (req) => {
         is_video: classified.is_video,
         classified_at: new Date().toISOString(),
         ...(isVideo ? { transcript_status: 'pending' as const } : {}),
+        ...(wantsArticle ? { article_status: 'pending' as const } : {}),
       })
       .eq('id', note_id)
       .select('*')
@@ -106,6 +115,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (wantsArticle) {
+      EdgeRuntime.waitUntil(
+        runArticleNotePipeline(db, note_id).catch((err) =>
+          console.error('runArticleNotePipeline error:', err),
+        ),
+      );
+
+      return jsonResponse({
+        ok: true,
+        classification: classified,
+        article_status: 'pending',
+        processing: true,
+      });
+    }
+
     let summary: string | null = null;
     const canSummarize = updatedNote.type === 'learn' || updatedNote.type === 'seed';
     const needsQuestions = canSummarize || updatedNote.type === 'feeling';
@@ -122,6 +146,7 @@ Deno.serve(async (req) => {
       ok: true,
       classification: classified,
       transcript_status: 'skipped',
+      article_status: 'skipped',
       questions_count: questions.questions.length,
     });
   } catch (err) {

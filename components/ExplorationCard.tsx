@@ -271,7 +271,7 @@ function createStyles(colors: ColorPalette) {
       fontSize: 12,
     },
     variantTag: {
-      backgroundColor: '#f6f4ee',
+      backgroundColor: colors.input,
       borderRadius: 10,
       color: colors.sub,
       fontSize: 12,
@@ -306,7 +306,7 @@ function createStyles(colors: ColorPalette) {
     },
     graphicRecImageWrap: {
       aspectRatio: EXPLORATION_GRAPHIC_REC.aspectRatio,
-      backgroundColor: '#f6f4ee',
+      backgroundColor: colors.input,
       borderColor: colors.line,
       borderRadius: 12,
       borderWidth: 1,
@@ -340,7 +340,7 @@ function createStyles(colors: ColorPalette) {
     graphicRecPending: {
       alignItems: 'center',
       aspectRatio: EXPLORATION_GRAPHIC_REC.aspectRatio,
-      backgroundColor: '#f6f4ee',
+      backgroundColor: colors.input,
       borderColor: colors.line,
       borderRadius: 12,
       borderWidth: 1,

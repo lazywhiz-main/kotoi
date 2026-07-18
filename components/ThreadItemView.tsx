@@ -23,6 +23,7 @@ type Props = {
   registerItemRef?: (itemId: string, node: View | null) => void;
   childrenByParent: Map<string, ThreadItem[]>;
   noteIsVideo?: boolean;
+  noteHasArticle?: boolean;
   updatingQuestionId?: string | null;
   /** 一言送信中の問い id */
   thoughtSubmittingId?: string | null;
@@ -56,6 +57,7 @@ export function ThreadItemView({
   registerItemRef,
   childrenByParent,
   noteIsVideo,
+  noteHasArticle,
   updatingQuestionId,
   thoughtSubmittingId,
   draftingThoughtId,
@@ -189,7 +191,7 @@ export function ThreadItemView({
       <SummaryCard
         body={item.body}
         pending={item.status === 'pending'}
-        isVideoTranscript={noteIsVideo}
+        sourceKind={noteIsVideo ? 'video' : noteHasArticle ? 'article' : null}
         noteId={noteId}
         emphasized={tutorialEmphasized && item.status !== 'pending'}
       />

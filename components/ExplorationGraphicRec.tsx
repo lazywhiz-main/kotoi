@@ -313,7 +313,7 @@ function createStyles(colors: ColorPalette) {
       fontWeight: '700',
     },
     variantTag: {
-      backgroundColor: '#f6f4ee',
+      backgroundColor: colors.input,
       borderRadius: 10,
       color: colors.sub,
       fontSize: 12,
@@ -403,7 +403,9 @@ function createStyles(colors: ColorPalette) {
     },
     imageFrame: {
       aspectRatio: EXPLORATION_GRAPHIC_REC.aspectRatio,
-      backgroundColor: '#f6f4ee',
+      // 配置前・作成中はテーマに合わせる（ダークで紙色＋薄い字にならないように）
+      // 完成画像は全面 Image なので下地はほぼ見えない
+      backgroundColor: colors.input,
       borderColor: colors.line,
       borderRadius: 12,
       borderWidth: 1,

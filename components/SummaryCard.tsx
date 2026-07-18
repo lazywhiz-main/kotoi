@@ -8,20 +8,33 @@ import { useMemo } from 'react';
 type Props = {
   body: string;
   pending?: boolean;
-  isVideoTranscript?: boolean;
+  /** 動画字幕 or 記事本文を材料にした要約 */
+  sourceKind?: 'video' | 'article' | null;
   noteId?: string;
   /** チュートリアル初回など、既存カードを壊さず枠だけ少し際立たせる */
   emphasized?: boolean;
+  /** @deprecated sourceKind を使う */
+  isVideoTranscript?: boolean;
 };
 
-export function SummaryCard({ body, pending, isVideoTranscript, noteId, emphasized }: Props) {
+export function SummaryCard({
+  body,
+  pending,
+  sourceKind,
+  noteId,
+  emphasized,
+  isVideoTranscript,
+}: Props) {
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const showTranscriptLink = isVideoTranscript && noteId && !pending;
+  const kind = sourceKind ?? (isVideoTranscript ? 'video' : null);
+  const who =
+    kind === 'video' ? '文字起こし要約' : kind === 'article' ? '記事要約' : '要約';
+  const showSourceLink = !!kind && !!noteId && !pending;
 
   return (
     <View style={styles.item}>
-      <Text style={styles.who}>{isVideoTranscript ? '文字起こし要約' : '要約'}</Text>
+      <Text style={styles.who}>{who}</Text>
       <View style={[styles.card, emphasized && styles.cardEmphasized]}>
         {pending ? (
           <View style={styles.pendingRow}>
@@ -31,7 +44,7 @@ export function SummaryCard({ body, pending, isVideoTranscript, noteId, emphasiz
         ) : (
           <Text selectable style={styles.body}>{body}</Text>
         )}
-        {showTranscriptLink ? (
+        {showSourceLink ? (
           <Link href={`/note/transcript/${noteId}`} asChild>
             <Pressable style={styles.transcriptLink}>
               <Text style={styles.transcriptLinkText}>全文を見る</Text>

@@ -70,6 +70,10 @@ export interface Note {
   video_title: string | null;
   video_transcript: string | null;
   transcript_status: ItemStatus | null;
+  /** 記事URLから抽出した本文 */
+  article_body: string | null;
+  /** pending/done/error。記事以外は null */
+  article_status: ItemStatus | null;
   classified_at: string | null;
   created_at: string;
   updated_at: string;
@@ -271,10 +275,16 @@ export interface ReviewAccumulation {
   has_activity: boolean;
 }
 
+import type { RecallRhythm } from '@/lib/dailyQuestion';
+
 export interface UserSettings {
   user_id: string;
   notify_agent_done: boolean;
   notify_weekly_review: boolean;
+  notify_daily_question: boolean;
+  recall_rhythm: RecallRhythm;
+  recall_weekday: number;
+  recall_hour: number;
   appearance: AppearancePreference;
   /** 最後に探究の振り分けを実行した時刻。null なら未実行 */
   explorations_clustered_at: string | null;

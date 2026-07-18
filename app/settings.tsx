@@ -3,6 +3,7 @@ import { useCallback, type ReactNode, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -21,6 +22,13 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useUsageSummary } from '@/hooks/useUsageSummary';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { invokeFunction } from '@/lib/api';
+import {
+  RECALL_RHYTHM_OPTIONS,
+  WEEKDAY_OPTIONS,
+  recallHourChipOptions,
+  recallHourLabel,
+} from '@/lib/dailyQuestion';
+import { LEGAL_URLS } from '@/lib/legal';
 import { clearAllTutorials } from '@/lib/tutorial/storage';
 import { formatUsd, mergeUsageBreakdown } from '@/lib/usageLabels';
 import { entitlementOf, type SubscriptionRow } from '@/lib/entitlements';
@@ -33,6 +41,12 @@ import { type AppearancePreference, type ColorPalette } from '@/lib/theme';
 import { useAuth } from '@/providers/AuthProvider';
 import { useOpeningGate } from '@/providers/OpeningGateProvider';
 import { useColors, useTheme } from '@/providers/ThemeProvider';
+
+function openLegalUrl(url: string) {
+  void Linking.openURL(url).catch(() => {
+    Alert.alert('', 'ページを開けませんでした');
+  });
+}
 
 function planStatusCopy(sub: SubscriptionRow): {
   title: string;
@@ -180,8 +194,13 @@ export default function SettingsScreen() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const { settings, loading: settingsLoading, saving, error: settingsError, updateSetting } =
-    useUserSettings(user?.id);
+  const {
+    settings,
+    loading: settingsLoading,
+    savingKey,
+    error: settingsError,
+    updateSetting,
+  } = useUserSettings(user?.id);
   const { summary, loading: usageLoading, error: usageError, refresh } = useUsageSummary();
 
   usePushNotifications(user?.id);
@@ -440,7 +459,6 @@ export default function SettingsScreen() {
           <AppearancePicker
             value={preference}
             onChange={(next) => void setPreference(next)}
-            disabled={saving}
           />
         </Section>
 
@@ -450,7 +468,7 @@ export default function SettingsScreen() {
             description="エージェントや見取り図、問いの振り分けが終わったら知らせます"
             value={settings?.notify_agent_done ?? true}
             onValueChange={(next) => void updateSetting('notify_agent_done', next)}
-            disabled={saving || settingsLoading}
+            disabled={settingsLoading || savingKey === 'notify_agent_done'}
           />
           <View style={styles.divider} />
           <SettingRow
@@ -458,10 +476,86 @@ export default function SettingsScreen() {
             description="ふりかえりができたら知らせます"
             value={settings?.notify_weekly_review ?? true}
             onValueChange={(next) => void updateSetting('notify_weekly_review', next)}
-            disabled={saving || settingsLoading}
+            disabled={settingsLoading || savingKey === 'notify_weekly_review'}
           />
           {Platform.OS === 'web' ? (
             <Text style={styles.platformHint}>プッシュ通知は実機アプリでのみ利用できます</Text>
+          ) : null}
+        </Section>
+
+        <Section title="別角度の呼び戻し">
+          <Text style={styles.appearanceLead}>
+            問いの棚に、溜まったメモと問いから別角度の問いを届けます。はじめはオフです。
+          </Text>
+          <Text style={styles.choiceLabel}>リズム</Text>
+          <View style={styles.choiceRow}>
+            {RECALL_RHYTHM_OPTIONS.map((opt) => {
+              const active = (settings?.recall_rhythm ?? 'off') === opt.id;
+              return (
+                <Pressable
+                  key={opt.id}
+                  disabled={settingsLoading || savingKey === 'recall_rhythm'}
+                  onPress={() => void updateSetting('recall_rhythm', opt.id)}
+                  style={[styles.choiceChip, active && styles.choiceChipActive]}
+                >
+                  <Text style={[styles.choiceChipText, active && styles.choiceChipTextActive]}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {(settings?.recall_rhythm ?? 'off') === 'weekly' ? (
+            <>
+              <Text style={styles.choiceLabel}>曜日</Text>
+              <View style={styles.choiceRow}>
+                {WEEKDAY_OPTIONS.map((opt) => {
+                  const active = (settings?.recall_weekday ?? 0) === opt.value;
+                  return (
+                    <Pressable
+                      key={opt.value}
+                      disabled={settingsLoading || savingKey === 'recall_weekday'}
+                      onPress={() => void updateSetting('recall_weekday', opt.value)}
+                      style={[styles.choiceChip, active && styles.choiceChipActive]}
+                    >
+                      <Text style={[styles.choiceChipText, active && styles.choiceChipTextActive]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
+          {(settings?.recall_rhythm ?? 'off') !== 'off' ? (
+            <>
+              <Text style={styles.choiceLabel}>届く時刻（日本時間）</Text>
+              <View style={styles.choiceRow}>
+                {recallHourChipOptions(settings?.recall_hour).map((hour) => {
+                  const active = (settings?.recall_hour ?? 8) === hour;
+                  return (
+                    <Pressable
+                      key={hour}
+                      disabled={settingsLoading || savingKey === 'recall_hour'}
+                      onPress={() => void updateSetting('recall_hour', hour)}
+                      style={[styles.choiceChip, active && styles.choiceChipActive]}
+                    >
+                      <Text style={[styles.choiceChipText, active && styles.choiceChipTextActive]}>
+                        {recallHourLabel(hour)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <View style={styles.divider} />
+              <SettingRow
+                label="届いたら通知"
+                description="今日の問いが届いたときに知らせます"
+                value={settings?.notify_daily_question ?? true}
+                onValueChange={(next) => void updateSetting('notify_daily_question', next)}
+                disabled={settingsLoading || savingKey === 'notify_daily_question'}
+              />
+            </>
           ) : null}
         </Section>
 
@@ -597,6 +691,29 @@ export default function SettingsScreen() {
                 放り込む・棚・探究の短い印を最初から見られます
               </Text>
             </View>
+          </Pressable>
+        </Section>
+
+        <Section title="法務">
+          <Pressable
+            onPress={() => openLegalUrl(LEGAL_URLS.terms)}
+            style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
+          >
+            <Text style={styles.rowLabel}>利用規約</Text>
+          </Pressable>
+          <View style={styles.divider} />
+          <Pressable
+            onPress={() => openLegalUrl(LEGAL_URLS.privacy)}
+            style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
+          >
+            <Text style={styles.rowLabel}>プライバシーポリシー</Text>
+          </Pressable>
+          <View style={styles.divider} />
+          <Pressable
+            onPress={() => openLegalUrl(LEGAL_URLS.tokushoho)}
+            style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
+          >
+            <Text style={styles.rowLabel}>特定商取引法に基づく表記</Text>
           </Pressable>
         </Section>
 
@@ -957,6 +1074,38 @@ function createStyles(colors: ColorPalette) {
     color: colors.sub,
     lineHeight: 20,
     marginBottom: 12,
+  },
+  choiceLabel: {
+    color: colors.sub,
+    fontSize: 13,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  choiceRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  choiceChip: {
+    backgroundColor: colors.card,
+    borderColor: colors.line,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  choiceChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  choiceChipText: {
+    color: colors.ink,
+    fontSize: 14,
+  },
+  choiceChipTextActive: {
+    color: colors.onAccent,
+    fontWeight: '600',
   },
   appearanceRow: {
     flexDirection: 'row',

@@ -1,8 +1,9 @@
 # 設計メモ — リズムで届く「別角度の呼び戻し」
 
 最終更新: 2026-07-10  
-ステータス: **方針確定** → 実装計画 [`plan-scheduled-recall-question.md`](./plan-scheduled-recall-question.md)  
-関連: 今週のふりかえりの「呼び戻し」、問いの棚、探究
+ステータス: **方針確定**（置き場は後続企画で棚に変更）  
+**最新企画**: [plan-daily-question-shelf.md](./plan-daily-question-shelf.md) — 問いの棚先頭 + プッシュ  
+実装計画（旧）: [`plan-scheduled-recall-question.md`](./plan-scheduled-recall-question.md)
 
 ---
 

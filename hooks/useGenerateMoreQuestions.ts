@@ -22,6 +22,12 @@ export function useGenerateMoreQuestions(noteId: string, onUpdated?: () => void)
         return false;
       }
 
+      if ((result.questions_count ?? 0) === 0) {
+        setError('いまは追加の問いを作れませんでした。少し時間をおくか、追記してから試してください。');
+        onUpdated?.();
+        return false;
+      }
+
       onUpdated?.();
       return true;
     } catch (err) {

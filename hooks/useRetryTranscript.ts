@@ -6,7 +6,8 @@ import { formatApiError } from '@/lib/errors';
 /**
  * 止まっているメモの処理を再開する。
  * - 未分類 → classify-note
- * - 分類済み（主に動画）→ fetch-transcript（要約・問いも含む）
+ * - 分類済み → fetch-transcript
+ *   （動画／記事／seed・learn・feeling の要約・問い補完）
  */
 export function useRetryNotePipeline(
   noteId: string,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { getSupabase } from '@/lib/supabase';
+import { isArticleProcessing, noteLooksLikeArticle } from '@/lib/article';
 import {
   isClassifyProcessing,
   isTranscriptProcessing,
@@ -110,12 +111,18 @@ export function useNoteThread(noteId: string | undefined) {
     (item) => item.status === 'pending' && itemAgeMs(item) < STUCK_PENDING_MS,
   );
 
+  const anchor = note ? videoPipelineAnchor(note) : null;
   const isProcessing =
     (!!note && isClassifyProcessing(note)) ||
     isTranscriptProcessing(
       note?.transcript_status ?? null,
       note?.is_video ?? false,
-      note ? videoPipelineAnchor(note) : null,
+      anchor,
+    ) ||
+    isArticleProcessing(
+      note?.article_status ?? null,
+      !!note && noteLooksLikeArticle(note),
+      anchor,
     ) ||
     hasFreshPending ||
     awaitingFirstQuestion;

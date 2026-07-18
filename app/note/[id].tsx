@@ -29,6 +29,10 @@ import { useNoteThread } from '@/hooks/useNoteThread';
 import { useRetryAgentJob } from '@/hooks/useRetryAgentJob';
 import { useTutorialScene } from '@/hooks/useTutorialScene';
 import { resolveAgentMode } from '@/lib/agentMode';
+import {
+  canAddFeelingQuestion,
+  feelingQuestionLimitCopy,
+} from '@/lib/feelingQuestions';
 import { type ColorPalette } from '@/lib/theme';
 import type { ChatMode, NoteType, ThreadItem } from '@/lib/types';
 import { useAuth } from '@/providers/AuthProvider';
@@ -134,11 +138,18 @@ export default function NoteScreen() {
     [topLevelItems],
   );
   const questionCount = useMemo(
-    () => items.filter((item) => item.kind === 'question').length,
+    () => items.filter((item) => item.kind === 'question' && item.status === 'done').length,
     [items],
   );
+  const isFeeling = note?.type === 'feeling';
+  const feelingAtLimit = isFeeling && !canAddFeelingQuestion(questionCount);
   const showGenerateMore =
-    !!note && canGrowQuestions(note.type) && questionCount > 0 && !isProcessing;
+    !!note &&
+    canGrowQuestions(note.type) &&
+    questionCount > 0 &&
+    !isProcessing &&
+    !(isFeeling && feelingAtLimit);
+  const feelingLimitHint = isFeeling ? feelingQuestionLimitCopy(questionCount) : null;
   const forceArchiveExpanded = !!itemId && archivedQuestions.some((item) => item.id === itemId);
 
   const firstSummaryId = useMemo(
@@ -379,6 +390,7 @@ export default function NoteScreen() {
   }
 
   const hasTranscript = note.is_video && note.transcript_status === 'done' && !!note.video_transcript;
+  const hasArticle = note.article_status === 'done' && !!note.article_body?.trim();
   const bannerError = thoughtError ?? archiveError ?? generateError ?? deleteError ?? retryAgentError;
   const clearBannerError = () => {
     clearThoughtError();
@@ -441,7 +453,9 @@ export default function NoteScreen() {
                       ? '分類中…'
                       : note.is_video && note.transcript_status === 'pending'
                         ? '文字起こし・要約・問いを生成中…'
-                        : '要約・問いを生成中…'
+                        : note.article_status === 'pending'
+                          ? '記事を読み取り・要約・問いを生成中…'
+                          : '要約・問いを生成中…'
                     : '問いを生成中…'}
                 </Text>
               </View>
@@ -462,6 +476,7 @@ export default function NoteScreen() {
                 registerItemRef={registerItemRef}
                 childrenByParent={childrenByParent}
                 noteIsVideo={hasTranscript}
+                noteHasArticle={hasArticle}
                 updatingQuestionId={updatingId}
                 thoughtSubmittingId={thoughtSubmittingId}
                 updatingThoughtId={updatingThoughtId}
@@ -485,8 +500,13 @@ export default function NoteScreen() {
               <GenerateMoreQuestions
                 disabled={generating}
                 loading={generating}
+                limitHint={feelingLimitHint}
                 onPress={() => void generateMore()}
               />
+            ) : null}
+
+            {feelingAtLimit && !isProcessing ? (
+              <Text style={styles.feelingLimitReached}>{feelingLimitHint}</Text>
             ) : null}
 
             <ArchivedQuestionsSection
@@ -494,6 +514,7 @@ export default function NoteScreen() {
               noteId={note.id}
               noteType={note.type}
               noteIsVideo={hasTranscript}
+              noteHasArticle={hasArticle}
               childrenByParent={childrenByParent}
               highlightedItemId={highlightedItemId}
               updatingId={updatingId}
@@ -523,8 +544,8 @@ export default function NoteScreen() {
                     : note.type === 'ref'
                       ? '保存メモです。必要なときに開いてください。'
                       : note.type === 'feeling'
-                        ? '感情メモは、そっと置く振り返りの問いだけが添われます。'
-                        : '問いが生成されなかったか、処理に失敗した可能性があります。'
+                        ? '振り返りの問いは最大3つまで。まだ無いときは上の「再取得」でやり直せます。'
+                        : '問いが生成されなかったか、処理に失敗した可能性があります。上の「再取得」でやり直せます。'
                 }
               />
             ) : null}
@@ -592,6 +613,14 @@ function createStyles(colors: ColorPalette) {
   processingText: {
     color: colors.sub,
     fontSize: 15,
+  },
+  feelingLimitReached: {
+    color: colors.sub,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 10,
+    marginTop: 4,
+    paddingHorizontal: 2,
   },
 });
 }

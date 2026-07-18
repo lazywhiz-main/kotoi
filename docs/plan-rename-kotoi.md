@@ -1,7 +1,7 @@
 # リネーム実行計画：MONDO → KOTOI
 
 最終更新: 2026-07-13  
-ステータス: **Phase 1 完了 → Phase 2（Dashboard）待ち**  
+ステータス: **Phase 2 進行中**（Auth OK → ASC / EAS が次）  
 アイデンティティ正本: [`cursor-handoff/09_rename-mondo-to-kotoi.md`](../cursor-handoff/09_rename-mondo-to-kotoi.md)
 
 ---
@@ -24,7 +24,7 @@
 | 表示名 | `KOTOI` |
 | Bundle / package | `app.kotoi`（所有ドメイン `kotoi.app` の reverse-DNS） |
 | scheme | `kotoi` → `kotoi://` |
-| Expo slug | `kotoi` |
+| Expo slug | `mondo`（EAS `projectId` に紐づき変更不可。ユーザー向け表示名とは別） |
 | WM / 公開ドメイン | `kotoi.art`（所有済み） |
 | 技術ドメイン | `kotoi.app`（所有済み・Bundle の由来） |
 | タグライン | 問いが増える（据え置き） |
@@ -63,9 +63,11 @@ Phase 4  後続（共有 Web / UL / LP / IAP）— リネームと分離
 | UI・オープニング・paywall・storage keys | ✅ |
 | `package.json` / config.toml / README Auth 記述 | ✅ |
 | mocks / 残 docs（ai-costs 等）の MONDO 表記 | ✅ |
-| Supabase Redirect / Apple Client / ASC 新規 | ⏳ Phase 2（**次はここ**） |
+| Supabase Redirect / Apple Client / ASC 新規 | ✅ Redirect・Apple Client・ASC（Apple ID `6790328040`） |
 | 実機での表示確認 | ✅（ユーザー確認） |
 | Bundle = `app.kotoi`（`kotoi.app` reverse-DNS） | ✅ 確定・変更しない |
+| OTP ログイン（`kotoi://`） | ✅ |
+| `eas.json` ascAppId | ✅ `6790328040` |
 
 ## 3. Phase 1 — リポ内（置換順）
 

@@ -26,6 +26,8 @@ export interface Note {
   video_title: string | null;
   video_transcript: string | null;
   transcript_status: ItemStatus | null;
+  article_body: string | null;
+  article_status: ItemStatus | null;
   classified_at: string | null;
   created_at: string;
   updated_at: string;
@@ -76,3 +78,21 @@ export interface SummarizeResult { summary: string; key_points: string[]; }
 export interface GeneratedQuestion { question_type: QuestionType; body: string; }
 export interface GenerateQuestionsResult { questions: GeneratedQuestion[]; }
 export interface ResearchResult { result: string; new_question: GeneratedQuestion; }
+
+export type RecallRhythm = 'off' | 'daily' | 'weekdays' | 'weekly';
+export type DailyQuestionStatus = 'active' | 'saved' | 'dismissed' | 'expired';
+
+export interface DailyQuestionDelivery {
+  id: string;
+  user_id: string;
+  question_type: QuestionType;
+  body: string;
+  why_now: string | null;
+  anchor_note_id: string;
+  anchor_question_id: string | null;
+  status: DailyQuestionStatus;
+  delivered_on: string;
+  saved_thread_item_id: string | null;
+  created_at: string;
+  updated_at: string;
+}

@@ -2,7 +2,8 @@
 
 最終更新: 2026-07-10  
 ステータス: **方針確定／実装は未着手**  
-設計: [`design-scheduled-recall-question.md`](./design-scheduled-recall-question.md)
+設計: [`design-scheduled-recall-question.md`](./design-scheduled-recall-question.md)  
+**最新企画（棚 + プッシュ）**: [`plan-daily-question-shelf.md`](./plan-daily-question-shelf.md)
 
 ---
 

@@ -91,6 +91,7 @@ export default function ExplorationsScreen() {
     !hasExplorations && unclusteredCount >= TUTORIAL_EXPLORE_READY_COUNT;
   const emphasizeAssignButton = showEmptyAssign && exploreReadyVisible && !clustering;
   const [firstAssignPressed, setFirstAssignPressed] = useState<boolean | null>(null);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
 
   useEffect(() => {
     void hasPressedFirstExplorationAssign().then(setFirstAssignPressed);
@@ -124,6 +125,19 @@ export default function ExplorationsScreen() {
       void refreshJob();
     }, [refresh, refreshUnclustered, refreshJob]),
   );
+
+  const onPullRefresh = useCallback(async () => {
+    setPullRefreshing(true);
+    try {
+      await Promise.all([
+        refresh(),
+        refreshUnclustered(),
+        refreshJob(),
+      ]);
+    } finally {
+      setPullRefreshing(false);
+    }
+  }, [refresh, refreshUnclustered, refreshJob]);
 
   useEffect(() => {
     if (!hasPendingGraphicRec && !clustering) return;
@@ -295,14 +309,12 @@ export default function ExplorationsScreen() {
           <FlatList
             data={explorations}
             keyExtractor={(item) => item.id}
+            contentInsetAdjustmentBehavior="never"
             contentContainerStyle={styles.list}
             refreshControl={
               <RefreshControl
-                refreshing={loading}
-                onRefresh={() => {
-                  void refresh();
-                  void refreshUnclustered();
-                }}
+                refreshing={pullRefreshing}
+                onRefresh={() => void onPullRefresh()}
               />
             }
             ListEmptyComponent={
