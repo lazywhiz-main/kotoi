@@ -4,6 +4,7 @@ const FN_LABELS: Record<string, string> = {
   'generate-questions': '問い',
   'generate-questions-more': '問い',
   'generate-questions-video-fallback': '問い',
+  'generate-daily-question': '今日の問い',
   'run-research': '調べる',
   'run-deepdive': '深掘り',
   'chat-turn-ask': 'AIに質問',

@@ -68,13 +68,10 @@ supabase db push   # user_settings / push_tokens / appearance
 
 ### 5. Auth メールテンプレート
 
-Supabase Dashboard → **Authentication** → **Email Templates** → **Magic Link**:
+手順と件名一覧: [`docs/ops/supabase-auth-emails.md`](./docs/ops/supabase-auth-emails.md)  
+HTML: `supabase/templates/*.html`
 
-```html
-<h2>KOTOI ログインコード</h2>
-<p>アプリにこのコードを入力してください：</p>
-<p><strong>{{ .Token }}</strong></p>
-```
+本番は Dashboard → **Authentication** → **Email Templates** に貼る（特に **Magic Link** に `{{ .Token }}`）。
 
 ### 5b. ソーシャルログイン（Apple / Google）
 

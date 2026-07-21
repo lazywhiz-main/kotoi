@@ -25,6 +25,7 @@ import {
   markDailyQuestionEnableSkipped,
 } from '@/lib/dailyQuestion';
 import { filterOpenQuestions, QUESTION_FILTERS, type QuestionFilter } from '@/lib/openQuestions';
+import { track } from '@/lib/analytics';
 import { type ColorPalette } from '@/lib/theme';
 import { useAuth } from '@/providers/AuthProvider';
 import { useColors } from '@/providers/ThemeProvider';
@@ -87,9 +88,15 @@ export default function ShelfScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      track('shelf_opened', { open_question_count: questions.length });
       refreshAll();
-    }, [refreshAll]),
+    }, [refreshAll, questions.length]),
   );
+
+  useEffect(() => {
+    if (!delivery) return;
+    track('daily_question_shown', { question_type: delivery.question_type });
+  }, [delivery?.id, delivery?.question_type]);
 
   const filtered = useMemo(
     () => filterOpenQuestions(questions, filter),
@@ -105,13 +112,21 @@ export default function ShelfScreen() {
           <DailyQuestionCard
             delivery={delivery}
             busy={acting}
-            onOpen={() =>
+            onOpen={() => {
+              track('daily_question_action', {
+                action: 'open',
+                question_type: delivery.question_type,
+              });
               router.push({
                 pathname: '/note/[id]',
                 params: { id: delivery.anchor_note_id },
-              })
-            }
+              });
+            }}
             onSave={() => {
+              track('daily_question_action', {
+                action: 'save',
+                question_type: delivery.question_type,
+              });
               void save().then((threadItemId) => {
                 if (threadItemId) {
                   void refresh();
@@ -125,7 +140,13 @@ export default function ShelfScreen() {
                 }
               });
             }}
-            onDismiss={() => void dismiss()}
+            onDismiss={() => {
+              track('daily_question_action', {
+                action: 'dismiss',
+                question_type: delivery.question_type,
+              });
+              void dismiss();
+            }}
           />
         ) : null}
         {showEnableCard ? (
@@ -133,6 +154,7 @@ export default function ShelfScreen() {
             busy={savingKey === 'recall_rhythm' || savingKey === 'recall_hour'}
             initialHour={settings?.recall_hour ?? 8}
             onEnable={(hour) => {
+              track('daily_question_enable', { action: 'enable', recall_hour: hour });
               void (async () => {
                 if (user?.id) await clearDailyQuestionEnableSkipped(user.id);
                 setEnableSkipped(false);
@@ -142,6 +164,7 @@ export default function ShelfScreen() {
               })();
             }}
             onSkip={() => {
+              track('daily_question_enable', { action: 'skip' });
               void (async () => {
                 if (!user?.id) return;
                 setEnableSkipped(true);
@@ -240,12 +263,16 @@ export default function ShelfScreen() {
             renderItem={({ item }) => (
               <ShelfQuestionRow
                 row={item}
-                onPress={() =>
+                onPress={() => {
+                  track('question_opened', {
+                    question_type: item.question_type,
+                    item_id: item.id,
+                  });
                   router.push({
                     pathname: '/note/[id]',
                     params: { id: item.note_id, itemId: item.id },
-                  })
-                }
+                  });
+                }}
               />
             )}
           />

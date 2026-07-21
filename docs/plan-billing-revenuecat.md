@@ -1,7 +1,8 @@
 # RevenueCat 手作業ガイド（KOTOI）
 
-最終更新: 2026-07-13  
-前提: ASC に `kotoi.pro.monthly` / `kotoi.pro.annual` が登録済み、Bundle `app.kotoi`
+最終更新: 2026-07-21  
+前提: ASC に `kotoi.pro.monthly` / `kotoi.pro.annual` が登録済み、Bundle `app.kotoi`  
+表示価格（公開前）: **月 ¥1,200 / 年 ¥10,000**（学割目安: 月 ¥600 / 年 ¥5,000）
 
 ---
 
@@ -22,10 +23,21 @@ Android は後で追加可。
 
 RevenueCat の iOS App 設定で、次のいずれか／両方を設定（ダッシュボードの手順に従う）:
 
-- **In-App Purchase Key**（.p8）— ASC → Users and Access → Integrations → In-App Purchase
+- **In-App Purchase Key**（.p8）— ASC → Users and Access → Integrations → In-App Purchase（推奨・現行）
 - **App Store Connect API Key**（商品インポート用）
 
-Shared Secret（旧）が求められたら ASC の App 内課金用共有シークレットを発行。
+### アプリ用共有シークレット（Shared Secret）
+
+ASC の「アプリ用共有シークレット」は、**Apple のレシート検証 API（verifyReceipt 系）にアプリ側／サーバが提示する共有鍵**です。
+
+| 誰が使うか | 用途 |
+|---|---|
+| **RevenueCat** | RC が App Store の購読レシートを検証するとき（RC の iOS App 設定に貼る） |
+| 自前サーバ | いまの KOTOI では **使わない**（課金検証は RC + Webhook） |
+
+審査フローで発行を求められた場合も、**発行して RevenueCat の Apple アプリ設定に入れておけば足りる**ことが多い。アプリの `.env` やクライアントコードには **入れない**（秘密情報）。
+
+既に In-App Purchase Key（.p8）を RC に入れていれば、Shared Secret はダッシュボードが求めるときだけ併用／移行用として扱う。
 
 ---
 

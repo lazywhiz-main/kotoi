@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KOTOI</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f7f4ef;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Hiragino Kaku Gothic ProN',Meiryo,sans-serif;color:#2c2925;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7f4ef;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" style="max-width:480px;background:#fffdf9;border:1px solid #e8e2d8;border-radius:16px;padding:28px 24px;">
+            <tr>
+              <td>
+                <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.2em;color:#8a8378;">KOTOI</p>
+                <h1 style="margin:0 0 16px;font-size:20px;font-weight:600;line-height:1.4;">KOTOI への招待</h1>
+                <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#5c564c;">
+                  KOTOI のアカウント作成に招待されました。次のコード、またはリンクから手続きを続けてください。
+                </p>
+                <p style="margin:0 0 16px;font-size:28px;font-weight:700;letter-spacing:0.3em;text-align:center;">
+                  {{ .Token }}
+                </p>
+                <p style="margin:0;font-size:15px;line-height:1.7;">
+                  <a href="{{ .ConfirmationURL }}" style="color:#2c2925;font-weight:600;">招待を受け入れる</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:16px 0 0;font-size:12px;color:#a39b90;">contact_kotoi@lazywhiz.io</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

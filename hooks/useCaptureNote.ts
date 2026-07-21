@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
 
 import { invokeFunction } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import { parseNoteInput } from '@/lib/parseNoteInput';
 import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
@@ -46,6 +47,11 @@ export function useCaptureNote() {
         setError(insertError?.message ?? '保存に失敗しました。');
         return null;
       }
+
+      track('note_created', {
+        has_url: Boolean(source_url),
+        note_id: data.id,
+      });
 
       void invokeFunction('classify-note', { note_id: data.id }).catch(() => {});
       router.push(`/note/${data.id}`);

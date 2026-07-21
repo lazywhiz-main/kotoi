@@ -24,6 +24,7 @@ import {
 import { getAuthRedirectUrl, getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { identifyPurchasesUser } from '@/lib/purchases';
 import { notifyExplicitLogout } from '@/lib/opening/logoutBridge';
+import { trackSessionStarted } from '@/lib/analytics';
 
 type AuthResult = { error: string | null };
 
@@ -123,12 +124,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(data.session);
       setLoading(false);
       void identifyPurchasesUser(data.session?.user?.id ?? null);
+      if (data.session) trackSessionStarted(true);
     });
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setLoading(false);
       void identifyPurchasesUser(nextSession?.user?.id ?? null);
+      if (nextSession) trackSessionStarted(false);
     });
 
     const handleUrl = (event: { url: string }) => {

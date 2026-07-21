@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { invokeFunction } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import {
   isPurchasesAvailable,
   purchasePlan,
@@ -32,6 +33,10 @@ export default function PaywallScreen() {
   const [plan, setPlan] = useState<PlanChoice>('annual');
   const [busy, setBusy] = useState(false);
   const styles = useMemo(() => createStyles(c), []);
+
+  useEffect(() => {
+    track('paywall_shown', { reason: reason ?? 'unknown' });
+  }, [reason]);
 
   const isSafety = reason === 'safety' || reason === 'read_only';
   const lead = isSafety
@@ -59,7 +64,7 @@ export default function PaywallScreen() {
     if (!isPurchasesAvailable()) {
       Alert.alert(
         '',
-        'ストア課金の接続は準備中です。年払い ¥15,000（推奨）／月払い ¥1,800。',
+        'ストア課金の接続は準備中です。年払い ¥10,000（推奨）／月払い ¥1,200。',
       );
       return;
     }
@@ -68,10 +73,15 @@ export default function PaywallScreen() {
     try {
       const result = await purchasePlan(plan);
       if (!result.ok) {
-        if (result.cancelled) return;
+        if (result.cancelled) {
+          track('purchase_result', { result: 'cancel', plan });
+          return;
+        }
+        track('purchase_result', { result: 'fail', plan });
         Alert.alert('', result.message);
         return;
       }
+      track('purchase_result', { result: 'ok', plan });
       await finishAfterSubscribe();
     } finally {
       setBusy(false);
@@ -133,14 +143,14 @@ export default function PaywallScreen() {
         <View style={styles.planRow}>
           <PlanCard
             label="年払い"
-            price="¥15,000 / 年"
-            hint="推奨 · 月あたり ¥1,250"
+            price="¥10,000 / 年"
+            hint="推奨 · 月あたり ¥833"
             selected={plan === 'annual'}
             onPress={() => setPlan('annual')}
           />
           <PlanCard
             label="月払い"
-            price="¥1,800 / 月"
+            price="¥1,200 / 月"
             hint=""
             selected={plan === 'monthly'}
             onPress={() => setPlan('monthly')}

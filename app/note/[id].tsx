@@ -29,6 +29,7 @@ import { useNoteThread } from '@/hooks/useNoteThread';
 import { useRetryAgentJob } from '@/hooks/useRetryAgentJob';
 import { useTutorialScene } from '@/hooks/useTutorialScene';
 import { resolveAgentMode } from '@/lib/agentMode';
+import { track } from '@/lib/analytics';
 import {
   canAddFeelingQuestion,
   feelingQuestionLimitCopy,
@@ -166,10 +167,11 @@ export default function NoteScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      track('thread_opened', { note_id: id, from: itemId ? 'shelf' : 'other' });
       return () => {
         if (threadTutorialReady) void markThreadTutorialSeen();
       };
-    }, [threadTutorialReady, markThreadTutorialSeen]),
+    }, [threadTutorialReady, markThreadTutorialSeen, id, itemId]),
   );
 
   const clearHighlightTimer = useCallback(() => {

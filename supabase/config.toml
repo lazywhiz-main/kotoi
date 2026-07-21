@@ -164,20 +164,41 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
+# Use a production-ready SMTP server（本番は Dashboard で設定。ここはローカル例）
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
+# host = "smtp.resend.com"
 # port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# user = "resend"
+# pass = "env(RESEND_API_KEY)"
+# admin_email = "noreply@kotoi.art"
+# sender_name = "KOTOI"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Auth email templates（ローカル CLI 用。本番は Dashboard に同じ HTML を貼る）
+# 手順: docs/ops/supabase-auth-emails.md
+[auth.email.template.magic_link]
+subject = "KOTOI ログインコード {{ .Token }}"
+content_path = "./templates/magic_link.html"
+
+[auth.email.template.confirmation]
+subject = "KOTOI メールアドレスの確認"
+content_path = "./templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "KOTOI パスワード再設定コード"
+content_path = "./templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "KOTOI 新しいメールアドレスの確認"
+content_path = "./templates/email_change.html"
+
+[auth.email.template.invite]
+subject = "KOTOI への招待"
+content_path = "./templates/invite.html"
+
+[auth.email.template.reauthentication]
+subject = "KOTOI 確認コード {{ .Token }}"
+content_path = "./templates/reauthentication.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.

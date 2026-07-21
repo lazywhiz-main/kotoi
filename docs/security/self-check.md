@@ -228,17 +228,18 @@
 
 実装・公開が必要な順:
 
-### K1. アカウント削除（Apple 必須 / Play 必須）— ❌
+### K1. アカウント削除（Apple 必須 / Play 必須）— アプリ実装済 / 公開ページ待ち
 
-- [ ] Edge Function `delete-account`（service_role で Auth user 削除 + 関連データ CASCADE または明示削除）
-- [ ] 設定画面に「アカウントを削除」（確認 2 段階）
-- [ ] 公開ページ `https://kotoi.art/account-delete`（メールフォーム or 手順 + `contact_kotoi@lazywhiz.io`）
-- [ ] プライバシーポリシー・Data safety・App Privacy を更新
+- [x] Edge Function `delete-account`（service_role で Auth user 削除 + Storage 掃除）
+- [x] 設定画面に「アカウントを削除」（確認 2 段階）
+- [ ] 公開ページ `https://kotoi.art/account-delete`（原稿: `docs/legal/account-delete.md`）
+- [x] プライバシーポリシー（リポ）をアプリ内削除に合わせて更新 — サイト反映待ち
 
-### K2. 法務【】の確定 — ❌
+### K2. 法務【】の確定 — サイト済 / リポ同期済
 
-- [ ] 法人名・住所・代表・電話・管轄裁判所
-- [ ] kotoi.art と `docs/legal/` を同時更新
+- [x] 法人名・住所・代表・管轄（電話は請求時開示）
+- [ ] kotoi.art の privacy に Analytics 追記を反映
+- [ ] account-delete ページ公開
 
 ### K3. 本番 Secrets 監査 — 🔍
 

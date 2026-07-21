@@ -9,7 +9,7 @@ import Purchases, {
 /** RevenueCat Entitlement ID（ダッシュボードと一致させる） */
 export const RC_ENTITLEMENT_PRO = 'pro';
 
-export type PaywallPlanChoice = 'annual' | 'monthly';
+export type PaywallPlanChoice = 'annual' | 'monthly' | 'student_annual' | 'student_monthly';
 
 let configured = false;
 let skippedInExpoGo = false;
@@ -83,16 +83,36 @@ function packageForPlan(
   plan: PaywallPlanChoice,
   pkgs: PurchasesPackage[],
 ): PurchasesPackage | null {
-  const byType =
-    plan === 'annual'
-      ? pkgs.find((p) => p.packageType === 'ANNUAL')
-      : pkgs.find((p) => p.packageType === 'MONTHLY');
-  if (byType) return byType;
+  if (plan === 'annual') {
+    const byType = pkgs.find((p) => p.packageType === 'ANNUAL');
+    if (byType && !pIdLooksStudent(byType.product.identifier)) return byType;
+  }
+  if (plan === 'monthly') {
+    const byType = pkgs.find((p) => p.packageType === 'MONTHLY');
+    if (byType && !pIdLooksStudent(byType.product.identifier)) return byType;
+  }
 
-  const needle = plan === 'annual' ? 'annual' : 'monthly';
+  const needles: string[] =
+    plan === 'student_annual'
+      ? ['student', 'annual']
+      : plan === 'student_monthly'
+        ? ['student', 'monthly']
+        : plan === 'annual'
+          ? ['annual']
+          : ['monthly'];
+
   return (
-    pkgs.find((p) => p.product.identifier.toLowerCase().includes(needle)) ?? null
+    pkgs.find((p) => {
+      const id = p.product.identifier.toLowerCase();
+      if (needles.includes('student') && !id.includes('student')) return false;
+      if (!needles.includes('student') && id.includes('student')) return false;
+      return needles.every((n) => n === 'student' || id.includes(n));
+    }) ?? null
   );
+}
+
+function pIdLooksStudent(id: string): boolean {
+  return id.toLowerCase().includes('student');
 }
 
 export async function getPackageForPlan(

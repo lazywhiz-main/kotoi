@@ -29,14 +29,24 @@ import {
   recallHourLabel,
 } from '@/lib/dailyQuestion';
 import { LEGAL_URLS } from '@/lib/legal';
-import { clearAllTutorials } from '@/lib/tutorial/storage';
-import { formatUsd, mergeUsageBreakdown } from '@/lib/usageLabels';
-import { entitlementOf, type SubscriptionRow } from '@/lib/entitlements';
 import {
+  annualUpgradeHint,
+  annualUpgradeTarget,
+  canUpgradeToAnnual,
   formatRenewalDate,
   isDevBillingStore,
   planDisplayName,
 } from '@/lib/planDisplay';
+import {
+  isPurchasesAvailable,
+  purchasePlan,
+  waitForSubscribed,
+} from '@/lib/purchases';
+import { clearAllTutorials } from '@/lib/tutorial/storage';
+import { track } from '@/lib/analytics';
+import { deleteAccount } from '@/lib/deleteAccount';
+import { formatUsd, mergeUsageBreakdown } from '@/lib/usageLabels';
+import { entitlementOf, type SubscriptionRow } from '@/lib/entitlements';
 import { type AppearancePreference, type ColorPalette } from '@/lib/theme';
 import { useAuth } from '@/providers/AuthProvider';
 import { useOpeningGate } from '@/providers/OpeningGateProvider';
@@ -177,6 +187,8 @@ export default function SettingsScreen() {
   const [lifetimeOpen, setLifetimeOpen] = useState(true);
   const [periodOpen, setPeriodOpen] = useState(true);
   const [billingBusy, setBillingBusy] = useState(false);
+  const [upgradeBusy, setUpgradeBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const { subscription, refresh: refreshSubscription } = useSubscription();
   const {
     user,
@@ -261,6 +273,145 @@ export default function SettingsScreen() {
     [refresh, refreshSubscription],
   );
 
+  const upgradeHint = annualUpgradeHint(subscription?.plan);
+  const upgradeTarget = annualUpgradeTarget(subscription?.plan);
+  const showAnnualUpgrade =
+    isSubscribed && canUpgradeToAnnual(subscription?.plan) && !!upgradeTarget;
+
+  const handleUpgradeToAnnual = useCallback(() => {
+    if (!upgradeTarget) return;
+
+    track('annual_upgrade_tapped');
+
+    const isStudent = upgradeTarget === 'student_annual';
+    Alert.alert(
+      '年払いに切り替える',
+      [
+        isStudent
+          ? '学割の年額プラン（¥5,000 / 年）に切り替えます。'
+          : '年額プラン（¥10,000 / 年）に切り替えます。',
+        '',
+        'いまの月額との差額や反映のタイミングは、ストアの購入画面の表示に従います。',
+        'キャンセルすれば、いまの月額のままです。',
+      ].join('\n'),
+      [
+        {
+          text: 'やめる',
+          style: 'cancel',
+          onPress: () => track('annual_upgrade_result', { result: 'cancel' }),
+        },
+        {
+          text: '切り替える',
+          onPress: () => {
+            void (async () => {
+              setUpgradeBusy(true);
+              try {
+                if (isDevBillingStore(subscription?.store)) {
+                  await invokeFunction('trial-dev-override', {
+                    action: 'subscribe',
+                    plan: upgradeTarget,
+                  });
+                  await refreshSubscription();
+                  track('annual_upgrade_result', { result: 'ok' });
+                  Alert.alert('', '年払いに切り替えました（仮）。');
+                  return;
+                }
+
+                if (!isPurchasesAvailable()) {
+                  track('annual_upgrade_result', { result: 'fail', error_code: 'unavailable' });
+                  Alert.alert(
+                    '',
+                    'ストア課金を使えるビルドでお試しください（TestFlight など）。',
+                  );
+                  return;
+                }
+
+                const result = await purchasePlan(upgradeTarget);
+                if (!result.ok) {
+                  if (result.cancelled) {
+                    track('annual_upgrade_result', { result: 'cancel' });
+                    return;
+                  }
+                  track('annual_upgrade_result', { result: 'fail' });
+                  Alert.alert('', result.message);
+                  return;
+                }
+
+                const ok = await waitForSubscribed(async () => {
+                  const row = await refreshSubscription();
+                  return (
+                    row?.plan === 'annual' || row?.plan === 'student_annual'
+                  );
+                });
+                track('annual_upgrade_result', { result: 'ok' });
+                Alert.alert(
+                  '',
+                  ok
+                    ? '年払いに切り替えました。'
+                    : '購入は完了しています。反映まで少し時間がかかることがあります。',
+                );
+              } catch (err: unknown) {
+                track('annual_upgrade_result', { result: 'fail' });
+                Alert.alert(
+                  '',
+                  err instanceof Error ? err.message : '切り替えに失敗しました',
+                );
+              } finally {
+                setUpgradeBusy(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  }, [upgradeTarget, subscription?.store, refreshSubscription]);
+
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      'アカウントを削除しますか？',
+      'メモ・問い・探究・設定など、このアカウントのデータはすべて削除されます。元に戻せません。',
+      [
+        { text: 'やめる', style: 'cancel' },
+        {
+          text: '削除する',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              '最終確認',
+              '本当にアカウントを削除しますか？',
+              [
+                { text: 'やめる', style: 'cancel' },
+                {
+                  text: '完全に削除',
+                  style: 'destructive',
+                  onPress: () => {
+                    void (async () => {
+                      setDeleteBusy(true);
+                      try {
+                        await deleteAccount();
+                        await signOut();
+                        Alert.alert('', 'アカウントを削除しました。');
+                      } catch (err: unknown) {
+                        Alert.alert(
+                          '',
+                          err instanceof Error
+                            ? err.message
+                            : '削除に失敗しました。しばらくしてから再度お試しください。',
+                        );
+                      } finally {
+                        setDeleteBusy(false);
+                      }
+                    })();
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  }, [signOut]);
+
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <Stack.Screen options={{ title: '設定' }} />
@@ -290,6 +441,25 @@ export default function SettingsScreen() {
                 ? `次回更新  ${renewalLabel}`
                 : '契約期間の情報はまだありません。'}
             </Text>
+            {showAnnualUpgrade && upgradeHint ? (
+              <View style={styles.upgradeBlock}>
+                <Text style={styles.upgradeHint}>{upgradeHint}</Text>
+                <Pressable
+                  disabled={upgradeBusy || billingBusy}
+                  onPress={handleUpgradeToAnnual}
+                  style={({ pressed }) => [
+                    styles.planCta,
+                    (pressed || upgradeBusy) && styles.pressed,
+                  ]}
+                >
+                  {upgradeBusy ? (
+                    <ActivityIndicator color={colors.onAccent} size="small" />
+                  ) : (
+                    <Text style={styles.planCtaText}>年払いに切り替える</Text>
+                  )}
+                </Pressable>
+              </View>
+            ) : null}
             {summary ? (
               <>
                 <View style={styles.lifetimeBox}>
@@ -817,6 +987,30 @@ export default function SettingsScreen() {
           >
             <Text style={styles.signOutText}>ログアウト</Text>
           </Pressable>
+          <Pressable
+            disabled={deleteBusy}
+            onPress={handleDeleteAccount}
+            style={({ pressed }) => [
+              styles.deleteAccountButton,
+              (pressed || deleteBusy) && styles.pressed,
+            ]}
+          >
+            {deleteBusy ? (
+              <ActivityIndicator color={colors.ref} />
+            ) : (
+              <Text style={styles.deleteAccountText}>アカウントを削除</Text>
+            )}
+          </Pressable>
+          <Text style={styles.deleteAccountHint}>
+            削除後は復元できません。ログインできない場合は{' '}
+            <Text
+              style={styles.deleteAccountLink}
+              onPress={() => openLegalUrl(LEGAL_URLS.accountDelete)}
+            >
+              アカウント削除ページ
+            </Text>
+            から請求できます。
+          </Text>
         </Section>
       </ScrollView>
     </SafeAreaView>
@@ -952,6 +1146,15 @@ function createStyles(colors: ColorPalette) {
     fontSize: 15,
     fontWeight: '700',
   },
+  upgradeBlock: {
+    marginTop: 14,
+    gap: 10,
+  },
+  upgradeHint: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.sub,
+  },
   billingModeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1001,6 +1204,25 @@ function createStyles(colors: ColorPalette) {
   signOutText: {
     fontSize: 17,
     color: colors.ref,
+  },
+  deleteAccountButton: {
+    marginTop: 16,
+    paddingVertical: 4,
+  },
+  deleteAccountText: {
+    fontSize: 17,
+    color: colors.ref,
+    fontWeight: '600',
+  },
+  deleteAccountHint: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.sub,
+  },
+  deleteAccountLink: {
+    color: colors.ink,
+    textDecorationLine: 'underline',
   },
   actionRow: {
     paddingVertical: 4,

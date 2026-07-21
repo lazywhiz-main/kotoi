@@ -12,6 +12,16 @@ export const PLAN_LABEL: Record<PlanKind, string> = {
   student_annual: '学割・年額',
 };
 
+/** 表示用（一般） */
+export const PLAN_PRICE_COPY = {
+  monthly: '¥1,200 / 月',
+  annual: '¥10,000 / 年',
+  annualPerMonth: '約 ¥833',
+  student_monthly: '¥600 / 月',
+  student_annual: '¥5,000 / 年',
+  studentAnnualPerMonth: '約 ¥417',
+} as const;
+
 export function planDisplayName(plan: PlanKind | null | undefined): string {
   if (!plan) return 'プラン';
   return PLAN_LABEL[plan] ?? plan;
@@ -32,4 +42,28 @@ export function formatRenewalDate(iso: string | null | undefined): string | null
 /** 開発用ストア印。本番 IAP では 'app_store' / 'play' 等に置き換わる想定 */
 export function isDevBillingStore(store: string | null | undefined): boolean {
   return store === 'dev';
+}
+
+/** 月額系 → 年額へアップグレード可能なとき true */
+export function canUpgradeToAnnual(plan: PlanKind | null | undefined): boolean {
+  return plan === 'monthly' || plan === 'student_monthly';
+}
+
+/** アップグレード先の plan_kind（購入・dev override 用） */
+export function annualUpgradeTarget(
+  plan: PlanKind | null | undefined,
+): 'annual' | 'student_annual' | null {
+  if (plan === 'monthly') return 'annual';
+  if (plan === 'student_monthly') return 'student_annual';
+  return null;
+}
+
+export function annualUpgradeHint(plan: PlanKind | null | undefined): string | null {
+  if (plan === 'monthly') {
+    return `年払いにすると、月あたり ${PLAN_PRICE_COPY.annualPerMonth}（${PLAN_PRICE_COPY.annual}）です。`;
+  }
+  if (plan === 'student_monthly') {
+    return `学割の年払いにすると、月あたり ${PLAN_PRICE_COPY.studentAnnualPerMonth}（${PLAN_PRICE_COPY.student_annual}）です。`;
+  }
+  return null;
 }
