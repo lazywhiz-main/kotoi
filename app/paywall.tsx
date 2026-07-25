@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,11 +14,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { invokeFunction } from '@/lib/api';
 import { track } from '@/lib/analytics';
+import { LEGAL_URLS } from '@/lib/legal';
 import {
+  getPaywallDisplayPrices,
   isPurchasesAvailable,
   purchasePlan,
   restorePurchases,
   waitForSubscribed,
+  type PaywallDisplayPrices,
 } from '@/lib/purchases';
 import { type ColorPalette, loginPalette } from '@/lib/theme';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -26,22 +30,55 @@ const c = loginPalette;
 
 type PlanChoice = 'annual' | 'monthly';
 
+function openUrl(url: string) {
+  void Linking.openURL(url).catch(() => {
+    Alert.alert('', 'ページを開けませんでした');
+  });
+}
+
 export default function PaywallScreen() {
   const router = useRouter();
   const { reason } = useLocalSearchParams<{ reason?: string }>();
   const { refresh, subscription } = useSubscription();
   const [plan, setPlan] = useState<PlanChoice>('annual');
   const [busy, setBusy] = useState(false);
+  const [prices, setPrices] = useState<PaywallDisplayPrices | null>(null);
+  const [pricesLoading, setPricesLoading] = useState(true);
   const styles = useMemo(() => createStyles(c), []);
 
   useEffect(() => {
     track('paywall_shown', { reason: reason ?? 'unknown' });
   }, [reason]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setPricesLoading(true);
+    void getPaywallDisplayPrices()
+      .then((next) => {
+        if (!cancelled) setPrices(next);
+      })
+      .finally(() => {
+        if (!cancelled) setPricesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const isSafety = reason === 'safety' || reason === 'read_only';
   const lead = isSafety
     ? 'いまは閲覧のみです。これまでの記録はそのまま残っています。続きを書くときは、ここから。'
     : '最初の見取り図は、お渡ししました。次の1枚から、続きを。';
+
+  const annualPrice = prices?.annual ?? '年払い';
+  const monthlyPrice = prices?.monthly ?? '月払い';
+  const annualHint = prices?.annualPerMonthHint
+    ? `推奨 · 月あたり約 ${prices.annualPerMonthHint}`
+    : prices?.annual
+      ? '推奨'
+      : pricesLoading
+        ? '価格を読み込み中…'
+        : 'ストアの表示に従います';
 
   const finishAfterSubscribe = async () => {
     const ok = await waitForSubscribed(async () => {
@@ -64,7 +101,7 @@ export default function PaywallScreen() {
     if (!isPurchasesAvailable()) {
       Alert.alert(
         '',
-        'ストア課金の接続は準備中です。年払い ¥10,000（推奨）／月払い ¥1,200。',
+        'ストア課金の接続は準備中です。価格は App Store / Google Play の表示に従います。',
       );
       return;
     }
@@ -143,14 +180,26 @@ export default function PaywallScreen() {
         <View style={styles.planRow}>
           <PlanCard
             label="年払い"
-            price="¥10,000 / 年"
-            hint="推奨 · 月あたり ¥833"
+            price={
+              pricesLoading && !prices?.annual
+                ? '読み込み中…'
+                : prices?.annual
+                  ? `${annualPrice} / 年`
+                  : '年払い（ストア価格）'
+            }
+            hint={annualHint}
             selected={plan === 'annual'}
             onPress={() => setPlan('annual')}
           />
           <PlanCard
             label="月払い"
-            price="¥1,200 / 月"
+            price={
+              pricesLoading && !prices?.monthly
+                ? '読み込み中…'
+                : prices?.monthly
+                  ? `${monthlyPrice} / 月`
+                  : '月払い（ストア価格）'
+            }
             hint=""
             selected={plan === 'monthly'}
             onPress={() => setPlan('monthly')}
@@ -185,6 +234,22 @@ export default function PaywallScreen() {
         <Pressable disabled={busy} onPress={handleLater} style={styles.later}>
           <Text style={styles.laterText}>あとで</Text>
         </Pressable>
+
+        <View style={styles.legalBlock}>
+          <Text style={styles.legalBody}>
+            サブスクリプションは、選択したプランに応じて課金されます。期間終了の24時間前までに解約しない限り自動更新され、更新時に同額が課金されます。解約は、端末のストアアカウント設定（iPhone の場合は「設定 → Apple
+            ID → サブスクリプション」）からいつでも行えます。
+          </Text>
+          <View style={styles.legalLinks}>
+            <Pressable onPress={() => openUrl(LEGAL_URLS.terms)} hitSlop={8}>
+              <Text style={styles.legalLink}>利用規約（EULA）</Text>
+            </Pressable>
+            <Text style={styles.legalSep}>·</Text>
+            <Pressable onPress={() => openUrl(LEGAL_URLS.privacy)} hitSlop={8}>
+              <Text style={styles.legalLink}>プライバシーポリシー</Text>
+            </Pressable>
+          </View>
+        </View>
 
         {__DEV__ ? (
           <Pressable
@@ -240,6 +305,7 @@ function createStyles(colors: ColorPalette) {
       justifyContent: 'center',
       paddingHorizontal: 24,
       paddingVertical: 36,
+      paddingBottom: 48,
     },
     brand: {
       color: colors.ink,
@@ -301,6 +367,32 @@ function createStyles(colors: ColorPalette) {
     restoreText: { color: colors.sub, fontSize: 14 },
     later: { alignItems: 'center', marginTop: 8, paddingVertical: 10 },
     laterText: { color: colors.sub, fontSize: 15 },
+    legalBlock: {
+      marginTop: 28,
+      paddingTop: 20,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.line,
+      gap: 12,
+    },
+    legalBody: {
+      color: colors.hint,
+      fontSize: 12,
+      lineHeight: 18,
+      textAlign: 'left',
+    },
+    legalLinks: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: 8,
+    },
+    legalLink: {
+      color: colors.ink,
+      fontSize: 13,
+      fontWeight: '600',
+      textDecorationLine: 'underline',
+    },
+    legalSep: { color: colors.hint, fontSize: 13 },
     pressed: { opacity: 0.75 },
     dev: { alignItems: 'center', marginTop: 28 },
     devText: { color: colors.hint, fontSize: 13 },

@@ -93,11 +93,18 @@ Android 用は後で:
 EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=goog_xxxxx
 ```
 
-EAS:
+EAS（iOS）:
 
 ```bash
 eas env:create --name EXPO_PUBLIC_REVENUECAT_IOS_API_KEY --value "appl_..." --environment production --visibility plaintext
 eas env:create --name EXPO_PUBLIC_REVENUECAT_IOS_API_KEY --value "appl_..." --environment preview --visibility plaintext
+```
+
+EAS（Android）— 手順の正本は [`ops/google-play-setup.md`](./ops/google-play-setup.md):
+
+```bash
+eas env:create --name EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY --value "goog_..." --environment production --visibility plaintext
+eas env:create --name EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY --value "goog_..." --environment preview --visibility plaintext
 ```
 
 ---
@@ -134,9 +141,16 @@ Events: 最低でも
 
 ## 9. 完了チェック
 
+### iOS
 - [ ] iOS App `app.kotoi` が RC に紐づいている
 - [ ] Products 2本が Entitlement `pro` に付いている
 - [ ] Offering `default` が Current
-- [ ] Public API Key を env / EAS に入れた
+- [ ] Public API Key（`appl_`）を env / EAS に入れた
 - [ ] Webhook URL + Auth を設定した
 - [ ] TestFlight で購入 → Supabase `subscriptions.trial_state = subscribed`
+
+### Android
+- [ ] Play Console アプリ + 定期購入 2本（手順: [`ops/google-play-setup.md`](./ops/google-play-setup.md)）
+- [ ] RC に Google Play アプリ + Products / `pro`
+- [ ] Public API Key（`goog_`）を EAS に入れた
+- [ ] 内部テストで購入 → `store = google` / `subscribed`

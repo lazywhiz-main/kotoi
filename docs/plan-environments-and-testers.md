@@ -77,7 +77,7 @@
 | 目的 | 方式 | 今すぐ |
 |---|---|---|
 | クローズドβ（課金なし） | T1 `access_grants`（未実装） | 実装後 |
-| 少数に full 付与 | **T2 RC Promotional** | ✅ |
+| 少数に full 付与 | **T2 RC Promotional** | ✅ 手順: [`ops/t2-revenuecat-promotional.md`](./ops/t2-revenuecat-promotional.md) |
 | Paywall・課金 QA | **T3 Sandbox** | ✅ |
 | App Review | **T4** デモアカウント + seed | ✅ |
 | 開発者シミュ | ローカル + override | ✅ |

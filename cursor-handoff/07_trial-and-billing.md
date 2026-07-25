@@ -326,9 +326,29 @@ PLモデルのファネルと1対1で対応させる。
 - [x] 主要 AI Function の `read_only` ガード（classify / chat-turn / cluster）
 - [x] `/paywall` UI（年払いデフォルト。ストア接続はプレースホルダ）
 - [x] `trial-dev-override`（状態切替のみ。安全弁の無効化はしない）
-- [ ] RevenueCat / 本番購入
+- [x] RevenueCat / 本番購入（iOS）。Android は [`docs/ops/google-play-setup.md`](../docs/ops/google-play-setup.md)
 - [ ] 残りの Edge Function への entitlement 差し込み
 - [ ] `read_only` 専用 UI の仕上げ
+
+### 11.5 App Store 3.1.2 / 2.1.0 — ペイウォール必須表示（リジェクト対応 2026-07）
+
+Apple は **購入画面（ペイウォール）上** に次を要求する（ガイドライン 3.1.2）:
+
+1. **タイトルと期間**（月払い／年払い）
+2. **価格**（**StoreKit / RevenueCat から取得。アプリに円額をハードコードしない**）
+3. **自動更新の説明**（更新される旨・更新時課金・解約方法。期間終了24時間前までに解約しない限り更新、等）
+4. **利用規約（EULA）とプライバシーポリシーへの機能するリンク**
+
+KOTOI 実装場所: `app/paywall.tsx`  
+リンク正本: https://kotoi.art/terms / https://kotoi.art/privacy  
+審査メモ: [`docs/ops/app-store-review-notes.md`](../docs/ops/app-store-review-notes.md)
+
+**2.1.0 App Completeness** で併発しやすい原因:
+
+- ASC のサブスク商品メタデータ未完成（Missing Metadata）→ 審査員が購入できない
+- 到達トライアルのみだとペイウォールに辿り着けない → **設定 → プラン → プランを見る** で開けること＋ Review メモに手順
+
+再提出前: 商品を「提出準備完了」にし、バイナリと一緒に提出。Review Notes にデモ手順を貼る。
 
 ---
 

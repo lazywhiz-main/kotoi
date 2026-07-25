@@ -106,7 +106,7 @@
 | E1 | デジタルコンテンツは IAP（RevenueCat） | ✅ | `react-native-purchases` |
 | E2 | Expo Go では Purchases をスキップ | ✅ | `lib/purchases.ts` `Constants.appOwnership` |
 | E3 | Paywall に購入復元 | ✅ | `app/paywall.tsx` `restorePurchases` |
-| E4 | サブスク条項・価格表示 | ⚠️ | 特商法ページ + Paywall UI。Store 価格と文言一致を 🔍 |
+| E4 | サブスク条項・価格表示 | ✅ | Paywall に自動更新文＋規約/PP。価格は StoreKit/RC |
 | E5 | Webhook 認証（共有シークレット） | ✅ | `REVENUECAT_WEBHOOK_AUTH` |
 | E6 | Webhook `verify_jwt = false` | ✅ | `supabase/config.toml` + deploy `--no-verify-jwt` |
 | E7 | `ALLOW_TRIAL_DEV_OVERRIDE` 本番無効 | ✅ | **unset 済み**（2026-07-16）。ローカルのみ可 |
@@ -192,7 +192,7 @@
 | I1 | Data safety フォーム完了 | 🔍 | Play Console → App content |
 | I2 | プライバシーポリシー URL | ✅ | Connect に https://kotoi.art/privacy |
 | I3 | Data safety とポリシーの一致 | 🔍 | 附录A/B と照合 |
-| I4 | アカウント削除 URL | ❌ | Play 必須。**ブロッカー** |
+| I4 | アカウント削除 URL | ✅ | https://kotoi.art/account-delete（公開済。Console 登録は手作業） |
 | I5 | 転送時暗号化（HTTPS） | ✅ | Data safety で「暗号化あり」申告可 |
 | I6 | 第三者 SDK のデータ収集を申告 | 🔍 | Supabase, RevenueCat, Expo（Push） |
 | I7 | `POST_NOTIFICATIONS`（Android 13+） | 🔍 | `expo-notifications` ビルドで自動付与。申告と一致 |

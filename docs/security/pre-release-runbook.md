@@ -96,7 +96,7 @@ AI: Anthropic Claude（サーバー側のみ）
 |---|---|
 | Privacy policy URL | https://kotoi.art/privacy |
 | Data safety | `self-check.md` §D と `privacy-policy.md` 附录A/B |
-| Account deletion URL | **要公開** — 例: `https://kotoi.art/account-delete` |
+| Account deletion URL | https://kotoi.art/account-delete（公開済 → Console に登録） |
 | Target API level | Play 最新要件を満たすビルド |
 | コンテンツレーティング | アンケート回答 |
 | 広告 ID | 使用しない（現行） |

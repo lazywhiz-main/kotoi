@@ -60,10 +60,10 @@ export function annualUpgradeTarget(
 
 export function annualUpgradeHint(plan: PlanKind | null | undefined): string | null {
   if (plan === 'monthly') {
-    return `年払いにすると、月あたり ${PLAN_PRICE_COPY.annualPerMonth}（${PLAN_PRICE_COPY.annual}）です。`;
+    return '年払いに切り替えると、月あたりの負担を抑えられます。価格は購入画面の表示に従います。';
   }
   if (plan === 'student_monthly') {
-    return `学割の年払いにすると、月あたり ${PLAN_PRICE_COPY.studentAnnualPerMonth}（${PLAN_PRICE_COPY.student_annual}）です。`;
+    return '学割の年払いに切り替えると、月あたりの負担を抑えられます。価格は購入画面の表示に従います。';
   }
   return null;
 }

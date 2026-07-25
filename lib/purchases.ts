@@ -127,6 +127,55 @@ export async function getPackageForPlan(
   return packageForPlan(plan, current.availablePackages);
 }
 
+/** ペイウォール表示用。価格文字列は Store / RevenueCat から取得（ハードコードしない） */
+export type PaywallDisplayPrices = {
+  monthly: string | null;
+  annual: string | null;
+  /** 年額を月換算した目安（計算できるときだけ） */
+  annualPerMonthHint: string | null;
+};
+
+export async function getPaywallDisplayPrices(): Promise<PaywallDisplayPrices> {
+  const empty: PaywallDisplayPrices = {
+    monthly: null,
+    annual: null,
+    annualPerMonthHint: null,
+  };
+  await configurePurchases();
+  if (!configured) return empty;
+
+  try {
+    const offerings = await Purchases.getOfferings();
+    const pkgs = offerings.current?.availablePackages ?? [];
+    const monthlyPkg = packageForPlan('monthly', pkgs);
+    const annualPkg = packageForPlan('annual', pkgs);
+
+    let annualPerMonthHint: string | null = null;
+    const annualPrice = annualPkg?.product.price;
+    if (typeof annualPrice === 'number' && annualPrice > 0) {
+      const per = annualPrice / 12;
+      try {
+        annualPerMonthHint = new Intl.NumberFormat('ja-JP', {
+          style: 'currency',
+          currency: annualPkg?.product.currencyCode ?? 'JPY',
+          maximumFractionDigits: 0,
+        }).format(per);
+      } catch {
+        annualPerMonthHint = `¥${Math.round(per).toLocaleString('ja-JP')}`;
+      }
+    }
+
+    return {
+      monthly: monthlyPkg?.product.priceString ?? null,
+      annual: annualPkg?.product.priceString ?? null,
+      annualPerMonthHint,
+    };
+  } catch (err) {
+    console.warn('getPaywallDisplayPrices failed', err);
+    return empty;
+  }
+}
+
 export type PurchaseResult =
   | { ok: true }
   | { ok: false; cancelled: boolean; message: string };
