@@ -39,6 +39,7 @@ import {
 } from '@/lib/planDisplay';
 import {
   isPurchasesAvailable,
+  openManageSubscriptions,
   purchasePlan,
   waitForSubscribed,
 } from '@/lib/purchases';
@@ -366,6 +367,18 @@ export default function SettingsScreen() {
     );
   }, [upgradeTarget, subscription?.store, refreshSubscription]);
 
+  const handleManageSubscription = useCallback(() => {
+    track('manage_subscription_tapped', {
+      platform: Platform.OS,
+      store: subscription?.store ?? null,
+    });
+    void openManageSubscriptions().then((result) => {
+      if (!result.ok) {
+        Alert.alert('', result.message);
+      }
+    });
+  }, [subscription?.store]);
+
   const handleDeleteAccount = useCallback(() => {
     Alert.alert(
       'アカウントを削除しますか？',
@@ -460,6 +473,23 @@ export default function SettingsScreen() {
                 </Pressable>
               </View>
             ) : null}
+            <Pressable
+              onPress={handleManageSubscription}
+              style={({ pressed }) => [
+                styles.manageSubscription,
+                pressed && styles.pressed,
+              ]}
+              accessibilityRole="link"
+            >
+              <Text style={styles.manageSubscriptionText}>
+                サブスクリプションを管理
+              </Text>
+            </Pressable>
+            <Text style={styles.manageSubscriptionHint}>
+              解約や支払い方法の変更は、
+              {Platform.OS === 'ios' ? 'App Store' : 'Google Play'}
+              で行います
+            </Text>
             {summary ? (
               <>
                 <View style={styles.lifetimeBox}>
@@ -1154,6 +1184,23 @@ function createStyles(colors: ColorPalette) {
     fontSize: 14,
     lineHeight: 20,
     color: colors.sub,
+  },
+  manageSubscription: {
+    marginTop: 14,
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+  },
+  manageSubscriptionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.ink,
+    textDecorationLine: 'underline',
+  },
+  manageSubscriptionHint: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.hint,
   },
   billingModeRow: {
     flexDirection: 'row',

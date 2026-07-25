@@ -1,10 +1,16 @@
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import Purchases, {
   LOG_LEVEL,
   PURCHASES_ERROR_CODE,
   type PurchasesPackage,
 } from 'react-native-purchases';
+
+/** OS の購読管理画面（showManageSubscriptions が使えないときのフォールバック） */
+const IOS_MANAGE_SUBSCRIPTIONS_URL =
+  'https://apps.apple.com/account/subscriptions';
+const ANDROID_MANAGE_SUBSCRIPTIONS_URL =
+  'https://play.google.com/store/account/subscriptions?package=app.kotoi';
 
 /** RevenueCat Entitlement ID（ダッシュボードと一致させる） */
 export const RC_ENTITLEMENT_PRO = 'pro';
@@ -262,4 +268,48 @@ export async function waitForSubscribed(
     await new Promise((r) => setTimeout(r, delayMs));
   }
   return check();
+}
+
+export type ManageSubscriptionsResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+/**
+ * OS の購読管理画面を開く（解約・支払い方法の変更）。
+ * iOS: StoreKit シート（失敗時は App Store URL）。
+ * Android: Play の購読一覧 URL。
+ */
+export async function openManageSubscriptions(): Promise<ManageSubscriptionsResult> {
+  if (Platform.OS === 'web') {
+    return {
+      ok: false,
+      message: '購読の管理は App Store または Google Play のアプリから行えます。',
+    };
+  }
+
+  await configurePurchases();
+
+  if (Platform.OS === 'ios' && configured) {
+    try {
+      await Purchases.showManageSubscriptions();
+      return { ok: true };
+    } catch (err) {
+      console.warn('showManageSubscriptions failed, falling back to URL', err);
+    }
+  }
+
+  const url =
+    Platform.OS === 'android'
+      ? ANDROID_MANAGE_SUBSCRIPTIONS_URL
+      : IOS_MANAGE_SUBSCRIPTIONS_URL;
+
+  try {
+    await Linking.openURL(url);
+    return { ok: true };
+  } catch {
+    return {
+      ok: false,
+      message: 'ストアの購読画面を開けませんでした',
+    };
+  }
 }

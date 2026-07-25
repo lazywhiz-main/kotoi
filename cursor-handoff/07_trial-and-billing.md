@@ -350,6 +350,15 @@ KOTOI 実装場所: `app/paywall.tsx`
 
 再提出前: 商品を「提出準備完了」にし、バイナリと一緒に提出。Review Notes にデモ手順を貼る。
 
+### 11.6 設定 → サブスクリプションを管理
+
+購読中ユーザー向けに、設定のプラン欄から **OS の購読管理画面**へ開ける導線を置く（アプリ内解約 UI は作らない）。
+
+- 文言: 「サブスクリプションを管理」
+- iOS: `Purchases.showManageSubscriptions()`（失敗時は App Store の購読 URL）
+- Android: Play の購読 URL（`package=app.kotoi`）
+- 実装: `lib/purchases.ts` の `openManageSubscriptions` / `app/settings.tsx`
+
 ---
 
 ## 12. やらないこと（初期）
